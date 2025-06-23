@@ -12,6 +12,7 @@ class Plotter(tk.Tk):
         self.title("Plot Assist")
         self.geometry("700x400")
 
+        ## Channel Selection Box and Label
         left_frame = tk.Frame(self, width=300)
         left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
         left_frame.pack_propagate(False)
@@ -21,7 +22,7 @@ class Plotter(tk.Tk):
 
         self.listbox = tk.Listbox(left_frame, selectmode=tk.MULTIPLE, activestyle='none')
         self.listbox.pack(fill=tk.BOTH, expand=True)
-
+        ## ↓ adds data ↓
         for col in self.df.columns:
             self.listbox.insert(tk.END, col)
         
@@ -31,15 +32,8 @@ class Plotter(tk.Tk):
         self.on_select(None)
 
     def on_select(self, event):
+        # self.listbox.get(i)
         selection_indices = self.listbox.curselection()
-
-        if selection_indices:
-            selected_index = selection_indices[0]
-
-            selected_item = self.listbox.get(selected_index)
-            
-            print(f"Selected: {selected_item}")
-    
 
 def plot_assist(df):
     app = Plotter(df)
