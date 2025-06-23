@@ -20,10 +20,16 @@ else:
 print("Succsesfully loaded/generated DataFrame")
 print(df.head())
 
-fig, axs = plt.subplots(3)
+fig = plt.figure()
+gs = fig.add_gridspec(3, hspace=0)
+axs = gs.subplots(sharex=True)
+
 axs[0].plot(df.index, df.cosine, linewidth=0.5)
 axs[1].plot(df.index, df.sine, linewidth=0.5)
 axs[2].plot(df.index, df.steps, linewidth=0.5)
+
+for ax in axs:
+    ax.label_outer()
 
 plt.show()
 
