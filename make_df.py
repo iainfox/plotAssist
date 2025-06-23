@@ -1,35 +1,48 @@
 import pandas as pd
 import numpy as np
-from matplotlib import pyplot as plt
+import tkinter as tk
 
-generate = False
+df = pd.read_csv('example_dataframe.csv')
 
-if generate:
-    some_ints = np.arange(0, 1000)
-    df = pd.DataFrame(data=some_ints, columns=['some_ints'])
-    df['some_dates'] = pd.to_datetime('2025-06-02') + pd.to_timedelta(df.some_ints/1000, unit='D')
+class Plotter(tk.Tk):
+    def __init__(self, df: pd.DataFrame):
+        super().__init__()
+        self.df = df
 
-    df.set_index('some_dates', inplace=True)
+        self.title("Plot Assist")
+        self.geometry("700x400")
 
-    df['cosine'] = np.cos(df.some_ints/100 * np.pi)
-    df['sine'] = np.sin(df.some_ints/100  * np.pi)
-    df['steps'] = (((df.some_ints/10).round(0) % 10)==0).astype(int)
-else:
-    df = pd.read_csv('example_dataframe.csv')
+        left_frame = tk.Frame(self, width=300)
+        left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
+        left_frame.pack_propagate(False)
+        
+        list_label = tk.Label(left_frame, text="Available Chanels")
+        list_label.pack(anchor='w')
 
-print("Succsesfully loaded/generated DataFrame")
-print(df.head())
+        self.listbox = tk.Listbox(left_frame, selectmode=tk.MULTIPLE, activestyle='none')
+        self.listbox.pack(fill=tk.BOTH, expand=True)
 
-fig = plt.figure()
-gs = fig.add_gridspec(3, hspace=0)
-axs = gs.subplots(sharex=True)
+        for col in self.df.columns:
+            self.listbox.insert(tk.END, col)
+        
+        self.listbox.bind('<<ListboxSelect>>', self.on_select)
 
-axs[0].plot(df.index, df.cosine, linewidth=0.5)
-axs[1].plot(df.index, df.sine, linewidth=0.5)
-axs[2].plot(df.index, df.steps, linewidth=0.5)
+        self.listbox.select_set(0)
+        self.on_select(None)
 
-for ax in axs:
-    ax.label_outer()
+    def on_select(self, event):
+        selection_indices = self.listbox.curselection()
 
-plt.show()
+        if selection_indices:
+            selected_index = selection_indices[0]
 
+            selected_item = self.listbox.get(selected_index)
+            
+            print(f"Selected: {selected_item}")
+    
+
+def plot_assist(df):
+    app = Plotter(df)
+    app.mainloop()
+
+plot_assist(df)
