@@ -25,15 +25,35 @@ class Plotter(tk.Tk):
         ## ↓ adds data ↓
         for col in self.df.columns:
             self.listbox.insert(tk.END, col)
+
+        ## Middle Column with Buttons
+        middle_frame = tk.Frame(self)
+        middle_frame.pack(side=tk.LEFT, fill=tk.Y, pady=10)
         
-        self.listbox.bind('<<ListboxSelect>>', self.on_select)
+        top_frame = tk.Frame(middle_frame)
+        top_frame.pack(fill=tk.X, pady=20)
+        
+        bottom_frame = tk.Frame(middle_frame)
+        bottom_frame.pack(fill=tk.X, side=tk.BOTTOM)
+        
+        right_buttons = [">>", "[>>]", ">", "[>]"]
+        self.right_buttons = []
+        for i, label in enumerate(right_buttons):
+            button = tk.Button(top_frame, text=label, width=4, height=2)
+            button.pack(pady=1)
+            button.config(command=lambda btn=button, idx=i: self.button_click(btn, idx))
+            self.right_buttons.append(button)
+        
+        left_buttons = ["<", "<<"]
+        self.left_buttons = []
+        for i, label in enumerate(left_buttons):
+            button = tk.Button(bottom_frame, text=label, width=4, height=2)
+            button.pack(pady=1)
+            button.config(command=lambda btn=button, idx=i+len(right_buttons): self.button_click(btn, idx))
+            self.left_buttons.append(button)
 
-        self.listbox.select_set(0)
-        self.on_select(None)
-
-    def on_select(self, event):
-        # self.listbox.get(i)
-        selection_indices = self.listbox.curselection()
+    def button_click(self, button, index):
+        print(f"Button {index + 1} clicked: {button.cget('text')}")
 
 def plot_assist(df):
     app = Plotter(df)
