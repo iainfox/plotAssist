@@ -26,9 +26,21 @@ class Plotter(tk.Tk):
         for col in self.df.columns:
             self.listbox.insert(tk.END, col)
 
+        # Create a second (right) listbox, initially empty
+        right_frame = tk.Frame(self, width=300)
+        right_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
+        right_frame.pack_propagate(False)
+
+        selected_label = tk.Label(right_frame, text="Selected Channels")
+        selected_label.pack(anchor='w')
+
+        self.selected_listbox = tk.Listbox(right_frame, selectmode=tk.MULTIPLE, activestyle='none')
+        self.selected_listbox.pack(fill=tk.BOTH, expand=True)
+        # self.selected_listbox.insert(tk.END, "column_name")
+            
         ## Middle Column with Buttons
         middle_frame = tk.Frame(self)
-        middle_frame.pack(side=tk.LEFT, fill=tk.Y, pady=10)
+        middle_frame.pack(side=tk.LEFT, fill=tk.Y, pady=10, before=right_frame)
         
         top_frame = tk.Frame(middle_frame)
         top_frame.pack(fill=tk.X, pady=20)
