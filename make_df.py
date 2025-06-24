@@ -41,7 +41,7 @@ class Plotter(tk.Tk):
         for i, label in enumerate(right_buttons):
             button = tk.Button(top_frame, text=label, width=4, height=2)
             button.pack(pady=1)
-            button.config(command=lambda btn=button, idx=i: self.button_click(btn, idx))
+            button.config(command=lambda btn=button, idx=i: self.buttonClick(btn, idx))
             self.right_buttons.append(button)
         
         left_buttons = ["<", "<<"]
@@ -49,11 +49,25 @@ class Plotter(tk.Tk):
         for i, label in enumerate(left_buttons):
             button = tk.Button(bottom_frame, text=label, width=4, height=2)
             button.pack(pady=1)
-            button.config(command=lambda btn=button, idx=i+len(right_buttons): self.button_click(btn, idx))
+            button.config(command=lambda btn=button, idx=i+len(right_buttons): self.buttonClick(btn, idx))
             self.left_buttons.append(button)
 
-    def button_click(self, button, index):
-        print(f"Button {index + 1} clicked: {button.cget('text')}")
+    def buttonClick(self, button, index):
+        match index:
+            case 0:  # ">>"
+                pass
+            case 1:  # "[>>]"
+                pass
+            case 2:  # ">"
+                pass
+            case 3:  # "[>]"
+                pass
+            case 4:  # "<"
+                pass
+            case 5:  # "<<"
+                pass
+            case _:
+                print(f"Unknown button index: {index}")
 
 def plot_assist(df):
     app = Plotter(df)
