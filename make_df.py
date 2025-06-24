@@ -51,15 +51,15 @@ class Plotter(tk.Tk):
         right_buttons = [">>", "[>>]", ">", "[>]"]
         self.right_buttons = []
         for i, label in enumerate(right_buttons):
-            button = tk.Button(top_frame, text=label, width=4, height=2)
+            button = tk.Button(top_frame, text=label, width=3)
             button.pack(pady=1)
             button.config(command=lambda btn=button, idx=i: self.buttonClick(btn, idx))
             self.right_buttons.append(button)
         
-        left_buttons = ["<", "<<"]
+        left_buttons = ["↑", "↓", "<", "<<"]
         self.left_buttons = []
         for i, label in enumerate(left_buttons):
-            button = tk.Button(bottom_frame, text=label, width=4, height=2)
+            button = tk.Button(bottom_frame, text=label, width=3)
             button.pack(pady=1)
             button.config(command=lambda btn=button, idx=i+len(right_buttons): self.buttonClick(btn, idx))
             self.left_buttons.append(button)
