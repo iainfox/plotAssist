@@ -12,13 +12,36 @@ class Plotter(tk.Tk):
         self.title("Plot Assist")
         self.geometry("700x400")
 
-        ## Channel Selection Box and Label
+        ## Channel Selection Box, Filter Entry, and Label
         left_frame = tk.Frame(self, width=300)
         left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
         left_frame.pack_propagate(False)
-        
-        list_label = tk.Label(left_frame, text="Available Chanels")
-        list_label.pack(anchor='w')
+
+        filter_label_frame = tk.Frame(left_frame)
+        filter_label_frame.pack(fill=tk.X, pady=(0, 2))
+
+        self.filter_entry = tk.Entry(filter_label_frame)
+        self.filter_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+
+        self._last_filter_text = ""
+        def on_filter_entry_change(event):
+            new_text = self.filter_entry.get()
+
+            if new_text != self._last_filter_text:
+                self.listbox.delete(0, tk.END)
+                print("Entry changed:", new_text)
+
+                for col in self.df.columns:
+                    if new_text.lower() in col.lower():
+                        self.listbox.insert(tk.END, col)
+                self._last_filter_text = new_text
+            else:
+                pass
+
+        self.filter_entry.bind("<KeyRelease>", on_filter_entry_change)
+
+        list_label = tk.Label(filter_label_frame, text="Available Chanels")
+        list_label.pack(side=tk.RIGHT, anchor='e')
 
         self.listbox = tk.Listbox(left_frame, selectmode=tk.MULTIPLE, activestyle='none')
         self.listbox.pack(fill=tk.BOTH, expand=True)
@@ -49,20 +72,16 @@ class Plotter(tk.Tk):
         bottom_frame.pack(fill=tk.X, side=tk.BOTTOM)
         
         right_buttons = [">>", "[>>]", ">", "[>]"]
-        self.right_buttons = []
         for i, label in enumerate(right_buttons):
             button = tk.Button(top_frame, text=label, width=3)
             button.pack(pady=1)
             button.config(command=lambda btn=button, idx=i: self.buttonClick(btn, idx))
-            self.right_buttons.append(button)
         
         left_buttons = ["↑", "↓", "<", "<<"]
-        self.left_buttons = []
         for i, label in enumerate(left_buttons):
             button = tk.Button(bottom_frame, text=label, width=3)
             button.pack(pady=1)
             button.config(command=lambda btn=button, idx=i+len(right_buttons): self.buttonClick(btn, idx))
-            self.left_buttons.append(button)
 
     def buttonClick(self, button, index):
         match index:
