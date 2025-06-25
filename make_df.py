@@ -43,7 +43,7 @@ class Plotter(tk.Tk):
         list_label = tk.Label(filter_label_frame, text="Available Chanels")
         list_label.pack(side=tk.RIGHT, anchor='e')
 
-        self.listbox = tk.Listbox(left_frame, selectmode=tk.MULTIPLE, activestyle='none')
+        self.listbox = tk.Listbox(left_frame, selectmode=tk.EXTENDED, activestyle='none')
         self.listbox.pack(fill=tk.BOTH, expand=True)
         ## ↓ adds data ↓
         for col in self.df.columns:
