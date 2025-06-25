@@ -50,8 +50,8 @@ class Plotter(tk.Tk):
             self.listbox.insert(tk.END, col)
 
         # Create a second (right) listbox, initially empty
-        right_frame = tk.Frame(self, width=300, height=350)
-        right_frame.pack(side=tk.LEFT, padx=10, pady=10, anchor='n')
+        right_frame = tk.Frame(self, width=300)
+        right_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10, anchor='n')
         right_frame.pack_propagate(False)
 
         selected_label = tk.Label(right_frame, text="Selected Channels")
@@ -82,6 +82,16 @@ class Plotter(tk.Tk):
             button = tk.Button(bottom_frame, text=label, width=3)
             button.pack(pady=1)
             button.config(command=lambda btn=button, idx=i+len(right_buttons): self.buttonClick(btn, idx))
+
+        ## Plot an settings btn
+        plot_btn_frame = tk.Frame(right_frame)
+        plot_btn_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=(3, 1))
+
+        plot_btn = tk.Button(plot_btn_frame, text="Plot")
+        plot_btn.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        settings_button = tk.Button(plot_btn_frame, text="?", width=2)
+        settings_button.pack(side=tk.RIGHT, padx=(4, 0))
 
     def buttonClick(self, button, index):
         if not hasattr(self, "selected_items_meta"):
