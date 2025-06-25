@@ -84,22 +84,112 @@ class Plotter(tk.Tk):
             button.config(command=lambda btn=button, idx=i+len(right_buttons): self.buttonClick(btn, idx))
 
     def buttonClick(self, button, index):
+        def get_visible_left_items():
+            return [self.listbox.get(i) for i in range(self.listbox.size())]
+
+        def get_selected_items(listbox):
+            return [listbox.get(i) for i in listbox.curselection()]
+
+        def remove_items_from_listbox(listbox, items):
+            indices = []
+            for i in range(listbox.size()):
+                if listbox.get(i) in items:
+                    indices.append(i)
+            for i in reversed(indices):
+                listbox.delete(i)
+
+        def add_items_to_listbox(listbox, items):
+                for item in items:
+                    listbox.insert(tk.END, item)
+
+        def get_previous_group():
+            max_group = 0
+            for i in range(self.selected_listbox.size()):
+                item = self.selected_listbox.get(i)
+                left = item.rfind('[')
+                right = item.rfind(']')
+                if left != -1 and right != -1 and right > left + 1:
+                    num_str = item[left+1:right]
+                    if num_str.isdigit():
+                        group_num = int(num_str)
+                        if group_num > max_group:
+                            max_group = group_num
+            return max_group
         match index:
             case 0:  # ">>"
-                pass
+                visible = get_visible_left_items()
+                if visible:
+                    group_num = get_previous_group() + 1
+                    items_with_group = [f"{item} [{group_num+i}]" for item in visible]
+                    add_items_to_listbox(self.selected_listbox, items_with_group)
             case 1:  # "[>>]"
-                pass
+                visible = get_visible_left_items()
+                if visible:
+                    group_num = get_previous_group() + 1
+                    items_with_group = [f"{item} [{group_num}]" for item in visible]
+                    add_items_to_listbox(self.selected_listbox, items_with_group)
             case 2:  # ">"
-                pass
+                selected = get_selected_items(self.listbox)
+                if selected:
+                    group_num = get_previous_group() + 1
+                    items_with_group = [f"{item} [{group_num+i}]" for i, item in enumerate(selected)]
+                    add_items_to_listbox(self.selected_listbox, items_with_group)
             case 3:  # "[>]"
-                pass
-            case 4:  # "<"
-                pass
-            case 5:  # "<<"
-                pass
+                selected = get_selected_items(self.listbox)
+                if selected:
+                    group_num = get_previous_group() + 1
+                    items_with_group = [f"{item} [{group_num}]" for item in selected]
+                    add_items_to_listbox(self.selected_listbox, items_with_group)
+            case 4:  # "↑"
+                lb = self.selected_listbox
+                sel = lb.curselection()
+                if not sel:
+                    return
+                for i in sel:
+                    if i == 0:
+                        continue
+                    item = lb.get(i)
+                    lb.delete(i)
+                    lb.insert(i-1, item)
+                    lb.selection_set(i-1)
+                    lb.selection_clear(i)
+            case 5:  # "↓"
+                lb = self.selected_listbox
+                sel = list(lb.curselection())
+                if not sel:
+                    return
+                for i in reversed(sel):
+                    if i == lb.size() - 1:
+                        continue
+                    item = lb.get(i)
+                    lb.delete(i)
+                    lb.insert(i+1, item)
+                    lb.selection_set(i+1)
+                    lb.selection_clear(i)
+            case 6:  # "<"
+                selected = get_selected_items(self.selected_listbox)
+                if selected:
+                    items_to_move = []
+                    for item in selected:
+                        if item.startswith("[") and item.endswith("]"):
+                            items = [x.strip() for x in item[1:-1].split(",")]
+                            items_to_move.extend(items)
+                        else:
+                            items_to_move.append(item)
+                    remove_items_from_listbox(self.selected_listbox, selected)
+            case 7:  # "<<"
+                all_items = [self.selected_listbox.get(i) for i in range(self.selected_listbox.size())]
+                if all_items:
+                    items_to_move = []
+                    for item in all_items:
+                        if item.startswith("[") and item.endswith("]"):
+                            items = [x.strip() for x in item[1:-1].split(",")]
+                            items_to_move.extend(items)
+                        else:
+                            items_to_move.append(item)
+                    self.selected_listbox.delete(0, tk.END)
             case _:
                 print(f"Unknown button index: {index}")
-
 def plot_assist(df):
     app = Plotter(df)
     app.mainloop()
