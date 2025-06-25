@@ -89,38 +89,30 @@ class Plotter(tk.Tk):
         settings_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10, anchor='n')
         settings_frame.pack_propagate(False)
 
-        # Frame with thin black border
         highlight_frame = tk.Frame(settings_frame, bd=1, relief="solid", highlightbackground="black", highlightcolor="black", highlightthickness=1)
         highlight_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Top row: "Highlight" label and channel label (not dropdown)
         top_row = tk.Frame(highlight_frame)
         top_row.pack(anchor='nw', pady=(8, 4), padx=8, fill=tk.X)
 
         highlight_label = tk.Label(top_row, text="Highlight", font=("Arial", 10, "bold"))
         highlight_label.pack(side=tk.LEFT)
 
-        # Label to show currently selected channel in selected_listbox
         self.highlight_channel_label_var = tk.StringVar(value="None")
         highlight_channel_label = tk.Label(top_row, textvariable=self.highlight_channel_label_var, font=("Arial", 10), relief="sunken", width=25, anchor='w')
         highlight_channel_label.pack(side=tk.LEFT, padx=(8, 0))
 
-        # Function to update the highlight channel label when selection changes
         def update_highlight_channel_label(event=None):
             selection = self.selected_listbox.curselection()
             if selection:
-                # Show the first selected item (as in the listbox)
                 selected_text = self.selected_listbox.get(selection[0])
                 self.highlight_channel_label_var.set(selected_text)
             else:
                 self.highlight_channel_label_var.set("None")
 
-        # Bind selection change in selected_listbox to update the label
         self.selected_listbox.bind("<<ListboxSelect>>", update_highlight_channel_label)
-        # Also update on startup
         update_highlight_channel_label()
 
-        # Second row: filter mode dropdown, value entry, color dropdown
         filter_row = tk.Frame(highlight_frame)
         filter_row.pack(anchor='nw', pady=(8, 4), padx=8, fill=tk.X)
 
@@ -138,7 +130,7 @@ class Plotter(tk.Tk):
         color_dropdown = ttk.Combobox(filter_row, textvariable=color_var, values=color_options, state="readonly", width=8)
         color_dropdown.pack(side=tk.LEFT, padx=(6, 0))
 
-        ## Plot an settings btn
+        ## Plot
         plot_btn_frame = tk.Frame(right_frame)
         plot_btn_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=(3, 1))
 
