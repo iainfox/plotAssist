@@ -50,8 +50,8 @@ class Plotter(tk.Tk):
             self.listbox.insert(tk.END, col)
 
         # Create a second (right) listbox, initially empty
-        right_frame = tk.Frame(self, width=300)
-        right_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
+        right_frame = tk.Frame(self, width=300, height=350)
+        right_frame.pack(side=tk.LEFT, padx=10, pady=10, anchor='n')
         right_frame.pack_propagate(False)
 
         selected_label = tk.Label(right_frame, text="Selected Channels")
