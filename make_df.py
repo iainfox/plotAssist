@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import tkinter as tk
+import tkinter.ttk as ttk
 
 df = pd.read_csv('example_dataframe.csv')
 
@@ -10,7 +11,7 @@ class Plotter(tk.Tk):
         self.df = df
 
         self.title("Plot Assist")
-        self.geometry("700x400")
+        self.geometry("1050x400")
 
         ## Channel Selection Box, Filter Entry, and Label
         left_frame = tk.Frame(self, width=300)
@@ -57,7 +58,7 @@ class Plotter(tk.Tk):
         selected_label = tk.Label(right_frame, text="Selected Channels")
         selected_label.pack(anchor='w')
 
-        self.selected_listbox = tk.Listbox(right_frame, selectmode=tk.MULTIPLE, activestyle='none')
+        self.selected_listbox = tk.Listbox(right_frame, selectmode=tk.EXTENDED, activestyle='none')
         self.selected_listbox.pack(fill=tk.BOTH, expand=True)
         # self.selected_listbox.insert(tk.END, "column_name")
             
@@ -83,15 +84,72 @@ class Plotter(tk.Tk):
             button.pack(pady=1)
             button.config(command=lambda btn=button, idx=i+len(right_buttons): self.buttonClick(btn, idx))
 
+        ## Settings Frame
+        settings_frame = tk.Frame(self, width=350)
+        settings_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10, anchor='n')
+        settings_frame.pack_propagate(False)
+
+        # Frame with thin black border
+        highlight_frame = tk.Frame(settings_frame, bd=1, relief="solid", highlightbackground="black", highlightcolor="black", highlightthickness=1)
+        highlight_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Top row: "Highlight" label and channel label (not dropdown)
+        top_row = tk.Frame(highlight_frame)
+        top_row.pack(anchor='nw', pady=(8, 4), padx=8, fill=tk.X)
+
+        highlight_label = tk.Label(top_row, text="Highlight", font=("Arial", 10, "bold"))
+        highlight_label.pack(side=tk.LEFT)
+
+        # Label to show currently selected channel in selected_listbox
+        self.highlight_channel_label_var = tk.StringVar(value="None")
+        highlight_channel_label = tk.Label(top_row, textvariable=self.highlight_channel_label_var, font=("Arial", 10), relief="sunken", width=25, anchor='w')
+        highlight_channel_label.pack(side=tk.LEFT, padx=(8, 0))
+
+        # Function to update the highlight channel label when selection changes
+        def update_highlight_channel_label(event=None):
+            selection = self.selected_listbox.curselection()
+            if selection:
+                # Show the first selected item (as in the listbox)
+                selected_text = self.selected_listbox.get(selection[0])
+                self.highlight_channel_label_var.set(selected_text)
+            else:
+                self.highlight_channel_label_var.set("None")
+
+        # Bind selection change in selected_listbox to update the label
+        self.selected_listbox.bind("<<ListboxSelect>>", update_highlight_channel_label)
+        # Also update on startup
+        update_highlight_channel_label()
+
+        # Second row: filter mode dropdown, value entry, color dropdown
+        filter_row = tk.Frame(highlight_frame)
+        filter_row.pack(anchor='nw', pady=(8, 4), padx=8, fill=tk.X)
+
+        filter_modes = ["==", ">=", "<=", ">", "<"]
+        filter_mode_var = tk.StringVar(value="==")
+        filter_mode_dropdown = ttk.Combobox(filter_row, textvariable=filter_mode_var, values=filter_modes, state="readonly", width=4)
+        filter_mode_dropdown.pack(side=tk.LEFT)
+
+        value_var = tk.StringVar(value="1")
+        value_entry = tk.Entry(filter_row, textvariable=value_var, width=10)
+        value_entry.pack(side=tk.LEFT, padx=(6, 0))
+
+        color_options = ["red", "green", "blue", "yellow", "magenta", "cyan", "orange", "purple"]
+        color_var = tk.StringVar(value="red")
+        color_dropdown = ttk.Combobox(filter_row, textvariable=color_var, values=color_options, state="readonly", width=8)
+        color_dropdown.pack(side=tk.LEFT, padx=(6, 0))
+
         ## Plot an settings btn
         plot_btn_frame = tk.Frame(right_frame)
         plot_btn_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=(3, 1))
 
-        plot_btn = tk.Button(plot_btn_frame, text="Plot")
-        plot_btn.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        def plot():
+            pass
 
-        settings_button = tk.Button(plot_btn_frame, text="?", width=2)
-        settings_button.pack(side=tk.RIGHT, padx=(4, 0))
+        def on_plot_button_click():
+            plot(self.df, self.selected_items_meta)
+
+        plot_btn = tk.Button(plot_btn_frame, text="Plot", command=on_plot_button_click)
+        plot_btn.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
     def buttonClick(self, button, index):
         if not hasattr(self, "selected_items_meta"):
@@ -101,6 +159,13 @@ class Plotter(tk.Tk):
             self.selected_listbox.delete(0, tk.END)
             for item in self.selected_items_meta:
                 self.selected_listbox.insert(tk.END, f"{item['name']} [{item['group']}]")
+            
+            group_numbers = sorted(set(item['group'] for item in getattr(self, "selected_items_meta", [])))
+            group_options = ["None"] + [f"Group {g}" for g in group_numbers]
+            current_group = self.group_var.get()
+            self.group_dropdown['values'] = group_options
+            if current_group not in group_options:
+                self.group_var.set("None")
 
         def get_visible_left_items():
             return [self.listbox.get(i) for i in range(self.listbox.size())]
@@ -185,6 +250,7 @@ class Plotter(tk.Tk):
                 sync_listbox_with_meta()
             case _:
                 print(f"Unknown button index: {index}")
+
 def plot_assist(df):
     app = Plotter(df)
     app.mainloop()
