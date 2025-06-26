@@ -126,12 +126,10 @@ class Plotter(tk.Tk):
         plot_btn_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=(3, 1))
 
         def plot():
-            pass
+            self.df
+            self.selected_items_meta
 
-        def on_plot_button_click():
-            plot(self.df, self.selected_items_meta)
-
-        plot_btn = tk.Button(plot_btn_frame, text="Plot", command=on_plot_button_click)
+        plot_btn = tk.Button(plot_btn_frame, text="Plot", command=plot)
         plot_btn.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
     def update_highlight_dropdown(self, event=None):
