@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import tkinter as tk
 import tkinter.ttk as ttk
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import random
 
@@ -130,6 +129,84 @@ class Plotter(tk.Tk):
         plot_btn_frame = tk.Frame(right_frame)
         plot_btn_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=(3, 1))
 
+        def highlight(ax, data):
+            if self.highlight_channel_var.get() in (None, "", "None"):
+                return
+            if filter_mode_var.get() not in filter_modes:
+                return
+            if value_var.get() in (None, ""):
+                return
+            try:
+                float(value_var.get())
+            except ValueError:
+                return
+
+            fm = filter_mode_var.get()
+            val = float(value_var.get())
+            color = color_var.get()
+
+            match fm:
+                case "==":
+                    highlighting = False
+                    start = None
+                    for i, v in enumerate(data):
+                        if v == val and not highlighting:
+                            highlighting = True
+                            start = i
+                        elif v != val and highlighting:
+                            highlighting = False
+                            ax.axvspan(start, i, color=color, alpha=0.5)
+                    if highlighting and start is not None:
+                        ax.axvspan(start, len(data), color=color, alpha=0.5)
+                case ">=": 
+                    highlighting = False
+                    start = None
+                    for i, v in enumerate(data):
+                        if v >= val and not highlighting:
+                            highlighting = True
+                            start = i
+                        elif v < val and highlighting:
+                            highlighting = False
+                            ax.axvspan(start, i, color=color, alpha=0.5)
+                    if highlighting and start is not None:
+                        ax.axvspan(start, len(data), color=color, alpha=0.5)
+                case "<=":
+                    highlighting = False
+                    start = None
+                    for i, v in enumerate(data):
+                        if v <= val and not highlighting:
+                            highlighting = True
+                            start = i
+                        elif v > val and highlighting:
+                            highlighting = False
+                            ax.axvspan(start, i, color=color, alpha=0.5)
+                    if highlighting and start is not None:
+                        ax.axvspan(start, len(data), color=color, alpha=0.5)
+                case ">":
+                    highlighting = False
+                    start = None
+                    for i, v in enumerate(data):
+                        if v > val and not highlighting:
+                            highlighting = True
+                            start = i
+                        elif v <= val and highlighting:
+                            highlighting = False
+                            ax.axvspan(start, i, color=color, alpha=0.5)
+                    if highlighting and start is not None:
+                        ax.axvspan(start, len(data), color=color, alpha=0.5)
+                case "<":
+                    highlighting = False
+                    start = None
+                    for i, v in enumerate(data):
+                        if v < val and not highlighting:
+                            highlighting = True
+                            start = i
+                        elif v >= val and highlighting:
+                            highlighting = False
+                            ax.axvspan(start, i, color=color, alpha=0.5)
+                    if highlighting and start is not None:
+                        ax.axvspan(start, len(data), color=color, alpha=0.5)
+
         def plot():
             if not hasattr(self, "selected_items_meta") or not self.selected_items_meta:
                 return
@@ -159,6 +236,8 @@ class Plotter(tk.Tk):
                 ax.legend(loc='upper right', fontsize=8)
                 if ax_idx != 0:
                     ax.spines['top'].set_visible(False)
+
+                highlight(ax, self.df[channel])
 
             axes[-1].set_xlabel("Index")
             plt.show()
