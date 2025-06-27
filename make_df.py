@@ -356,4 +356,5 @@ def plot_assist(df):
     app = Plotter(df)
     app.mainloop()
 
-plot_assist(df)
+if __name__ == "__main__":
+    plot_assist(df)
