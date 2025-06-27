@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 import tkinter as tk
 import tkinter.ttk as ttk
 import matplotlib.pyplot as plt
@@ -74,13 +73,13 @@ class Plotter(tk.Tk):
         for i, label in enumerate(right_buttons):
             button = tk.Button(top_frame, text=label, width=3)
             button.pack(pady=1)
-            button.config(command=lambda btn=button, idx=i: self.buttonClick(btn, idx))
+            button.config(command=lambda btn=button, idx=i: self.buttonClick(idx))
         
         left_buttons = ["↑", "↓", "<", "<<"]
         for i, label in enumerate(left_buttons):
             button = tk.Button(bottom_frame, text=label, width=3)
             button.pack(pady=1)
-            button.config(command=lambda btn=button, idx=i+len(right_buttons): self.buttonClick(btn, idx))
+            button.config(command=lambda btn=button, idx=i+len(right_buttons): self.buttonClick(idx))
 
         settings_frame = tk.Frame(self, width=350)
         settings_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10, anchor='n')
@@ -253,7 +252,7 @@ class Plotter(tk.Tk):
             if current not in values:
                 self.highlight_channel_var.set("None")
 
-    def buttonClick(self, button, index):
+    def buttonClick(self, index):
         if not hasattr(self, "selected_items_meta"):
             self.selected_items_meta = []
 
