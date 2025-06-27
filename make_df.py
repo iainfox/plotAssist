@@ -2,6 +2,9 @@ import pandas as pd
 import numpy as np
 import tkinter as tk
 import tkinter.ttk as ttk
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import random
 
 df = pd.read_csv('example_dataframe.csv')
 
@@ -13,7 +16,6 @@ class Plotter(tk.Tk):
         self.title("Plot Assist")
         self.geometry("1050x400")
 
-        ## Channel Selection Box, Filter Entry, and Label
         left_frame = tk.Frame(self, width=300)
         left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
         left_frame.pack_propagate(False)
@@ -46,11 +48,10 @@ class Plotter(tk.Tk):
 
         self.listbox = tk.Listbox(left_frame, selectmode=tk.EXTENDED, activestyle='none')
         self.listbox.pack(fill=tk.BOTH, expand=True)
-        ## ↓ adds data ↓
+        
         for col in self.df.columns:
             self.listbox.insert(tk.END, col)
 
-        # Create a second (right) listbox, initially empty
         right_frame = tk.Frame(self, width=300)
         right_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10, anchor='n')
         right_frame.pack_propagate(False)
@@ -60,9 +61,7 @@ class Plotter(tk.Tk):
 
         self.selected_listbox = tk.Listbox(right_frame, selectmode=tk.EXTENDED, activestyle='none')
         self.selected_listbox.pack(fill=tk.BOTH, expand=True)
-        # self.selected_listbox.insert(tk.END, "column_name")
-            
-        ## Middle Column with Buttons
+
         middle_frame = tk.Frame(self)
         middle_frame.pack(side=tk.LEFT, fill=tk.Y, pady=10, before=right_frame)
         
@@ -84,12 +83,11 @@ class Plotter(tk.Tk):
             button.pack(pady=1)
             button.config(command=lambda btn=button, idx=i+len(right_buttons): self.buttonClick(btn, idx))
 
-        ## Settings Frame
         settings_frame = tk.Frame(self, width=350)
         settings_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10, anchor='n')
         settings_frame.pack_propagate(False)
 
-        highlight_frame = tk.Frame(settings_frame, bd=1, relief="solid", highlightbackground="black", highlightcolor="black", highlightthickness=1)
+        highlight_frame = tk.Frame(settings_frame, bd=1, relief="flat", highlightbackground="black", highlightcolor="black", highlightthickness=1)
         highlight_frame.pack(fill=tk.BOTH, expand=True)
 
         top_row = tk.Frame(highlight_frame)
@@ -116,18 +114,54 @@ class Plotter(tk.Tk):
         value_entry = tk.Entry(filter_row, textvariable=value_var, width=10)
         value_entry.pack(side=tk.LEFT, padx=(6, 0))
 
-        color_options = ["red", "green", "blue", "yellow", "magenta", "cyan", "orange", "purple"]
+        color_options = [
+            "#FF0000",
+            "#FFA500",
+            "#00FF00",
+            "#0000FF",
+            "#FF00FF",
+            "#00FFFF",
+            "#FFFF00",
+        ]
         color_var = tk.StringVar(value="red")
         color_dropdown = ttk.Combobox(filter_row, textvariable=color_var, values=color_options, state="readonly", width=8)
         color_dropdown.pack(side=tk.LEFT, padx=(6, 0))
 
-        ## Plot
         plot_btn_frame = tk.Frame(right_frame)
         plot_btn_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=(3, 1))
 
         def plot():
-            self.df
-            self.selected_items_meta
+            if not hasattr(self, "selected_items_meta") or not self.selected_items_meta:
+                return
+
+            from collections import defaultdict
+            groups = defaultdict(list)
+            for item in self.selected_items_meta:
+                groups[item['group']].append(item['name'])
+
+            sorted_groups = sorted(groups.items(), key=lambda x: x[0])
+
+            n_groups = len(sorted_groups)
+            fig, axes = plt.subplots(n_groups, 1, sharex=True, sharey=False, figsize=(8, 2.5 * n_groups), constrained_layout=True)
+            if n_groups == 1:
+                axes = [axes]
+
+            for ax_idx, (group_num, channel_names) in enumerate(sorted_groups):
+                ax = axes[ax_idx]
+                for channel in channel_names:
+                    if channel not in self.df.columns:
+                        continue
+                    color = random.choice(color_options)
+                    ax.plot(self.df.index, self.df[channel], label=channel, color=color, linewidth=2)
+
+                ax.grid(True, which='both', linestyle='--', alpha=0.6)
+                ax.set_ylabel(f"Group {group_num}")
+                ax.legend(loc='upper right', fontsize=8)
+                if ax_idx != 0:
+                    ax.spines['top'].set_visible(False)
+
+            axes[-1].set_xlabel("Index")
+            plt.show()
 
         plot_btn = tk.Button(plot_btn_frame, text="Plot", command=plot)
         plot_btn.pack(side=tk.LEFT, fill=tk.X, expand=True)
