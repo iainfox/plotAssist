@@ -94,9 +94,32 @@ class Plotter(tk.Tk):
  
         self.highlight_channel_var = tk.StringVar(value="None")
         self.highlight_channel_dropdown = ttk.Combobox(
-            top_row, textvariable=self.highlight_channel_var, state="readonly", width=25, values=["None"]
+            top_row, textvariable=self.highlight_channel_var, state="readonly", width=25, values=["None"] + sorted(self.df.columns)
         )
         self.highlight_channel_dropdown.pack(side=tk.LEFT, padx=(8, 0))
+
+        self.highlight_filter_entry = tk.Entry(top_row)
+        self.highlight_filter_entry.insert(0, "Search channels...")
+        self.highlight_filter_entry.pack(side=tk.LEFT, padx=(8, 0), fill=tk.X, expand=True)
+
+        self._last_highlight_filter_text = ""
+        def on_highlight_filter_entry_change(event):
+            new_text = self.highlight_filter_entry.get().strip()
+
+            if new_text != self._last_highlight_filter_text:
+                current_values = ["None"]
+                
+                if new_text == "":
+                    current_values.extend(sorted(self.df.columns))
+                else:
+                    for col in self.df.columns:
+                        if new_text.lower() in col.lower():
+                            current_values.append(col)
+                
+                self.highlight_channel_dropdown['values'] = current_values
+                self._last_highlight_filter_text = new_text
+
+        self.highlight_filter_entry.bind("<KeyRelease>", on_highlight_filter_entry_change)
 
         filter_row = tk.Frame(highlight_frame)
         filter_row.pack(anchor='nw', pady=(8, 4), padx=8, fill=tk.X)
