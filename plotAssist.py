@@ -46,8 +46,7 @@ class Plotter(tk.Tk):
         self.listbox = tk.Listbox(left_frame, selectmode=tk.EXTENDED, activestyle='none')
         self.listbox.pack(fill=tk.BOTH, expand=True)
         
-        for col in self.df.columns:
-            self.listbox.insert(tk.END, col)
+        self.listbox.insert(tk.END, *sorted(self.df.columns))
 
         right_frame = tk.Frame(self, width=300)
         right_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10, anchor='n')
