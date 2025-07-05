@@ -74,7 +74,7 @@ class Plotter(tk.Tk):
             button.pack(pady=1)
             button.config(command=lambda btn=button, idx=i: self.buttonClick(idx))
         
-        left_buttons = ["↑", "↓", "<", "<<"]
+        left_buttons = ["[<>]", "[><]", "↑", "↓", "<", "<<"]
         for i, label in enumerate(left_buttons):
             button = tk.Button(bottom_frame, text=label, width=3)
             button.pack(pady=1)
@@ -337,6 +337,16 @@ class Plotter(tk.Tk):
                 return 1
             return max(item['group'] for item in self.selected_items_meta) + 1
 
+        def normalize_groups():
+            if not self.selected_items_meta:
+                return
+
+            unique_groups = sorted(set(item['group'] for item in self.selected_items_meta))
+            group_mapping = {old_group: new_group for new_group, old_group in enumerate(unique_groups, 1)}
+
+            for item in self.selected_items_meta:
+                item['group'] = group_mapping[item['group']]
+
         match index:
             case 0:  # ">>"
                 visible = get_visible_left_items()
@@ -370,7 +380,32 @@ class Plotter(tk.Tk):
                         self.selected_items_meta.append({'name': item, 'group': group_num})
                     sync_listbox_with_meta()
 
-            case 4:  # "↑"
+            case 4: # "[<>]"
+                sel = get_selected_meta_indices()
+                if not sel:
+                    return
+                    
+                group_num = get_next_group_number()
+                for i in reversed(sel):
+                    item = self.selected_items_meta[i]
+                    del self.selected_items_meta[i]
+                    self.selected_items_meta.append({'name': item['name'], 'group': group_num})
+                    group_num += 1
+                normalize_groups()
+                sync_listbox_with_meta()
+
+            case 5: # "[><]"
+                sel = get_selected_meta_indices()
+                if not sel:
+                    return
+                    
+                group_num = get_next_group_number()
+                for i in sel:
+                    self.selected_items_meta[i]['group'] = group_num
+                normalize_groups()
+                sync_listbox_with_meta()
+            
+            case 6:  # "↑"
                 sel = get_selected_meta_indices()
                 if not sel:
                     return
@@ -382,7 +417,7 @@ class Plotter(tk.Tk):
                 for i in [s-1 for s in sel if s > 0]:
                     self.selected_listbox.selection_set(i)
 
-            case 5:  # "↓"
+            case 7:  # "↓"
                 sel = get_selected_meta_indices()
                 if not sel:
                     return
@@ -394,14 +429,15 @@ class Plotter(tk.Tk):
                 for i in [s+1 for s in sel if s < len(self.selected_items_meta)-1]:
                     self.selected_listbox.selection_set(i)
 
-            case 6:  # "<"
+            case 8:  # "<"
                 sel = get_selected_meta_indices()
                 if sel:
                     for i in reversed(sel):
                         del self.selected_items_meta[i]
+                    normalize_groups()
                     sync_listbox_with_meta()
 
-            case 7:  # "<<"
+            case 9:  # "<<"
                 self.selected_items_meta.clear()
                 sync_listbox_with_meta()
             case _:
