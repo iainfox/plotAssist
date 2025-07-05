@@ -121,17 +121,8 @@ class Plotter(tk.Tk):
             "yellow": "#FFFF00",
         }
 
-        color_options = [
-            "red",
-            "orange",
-            "green",
-            "blue",
-            "magenta",
-            "cyan",
-            "yellow",
-        ]
         color_var = tk.StringVar(value="red")
-        color_dropdown = ttk.Combobox(filter_row, textvariable=color_var, values=color_options, state="readonly", width=8)
+        color_dropdown = ttk.Combobox(filter_row, textvariable=color_var, values=list(color_values.keys()), state="readonly", width=8)
         color_dropdown.pack(side=tk.LEFT, padx=(6, 0))
 
         plot_btn_frame = tk.Frame(right_frame)
