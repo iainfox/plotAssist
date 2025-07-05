@@ -2,7 +2,6 @@ import pandas as pd
 import tkinter as tk
 import tkinter.ttk as ttk
 import matplotlib.pyplot as plt
-import random
 
 df = pd.read_csv('example_dataframe.csv')
 
@@ -237,8 +236,7 @@ class Plotter(tk.Tk):
                 for channel in channel_names:
                     if channel not in self.df.columns:
                         continue
-                    color = random.choice(color_options)
-                    ax.plot(self.df.index, self.df[channel], label=channel, color=color, linewidth=2)
+                    ax.plot(self.df.index, self.df[channel], label=channel, linewidth=2)
 
                 ax.grid(True, which='both', linestyle='--', alpha=0.6)
                 ax.set_ylabel(f"Group {group_num}")
