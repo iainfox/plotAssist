@@ -83,56 +83,6 @@ class Plotter(tk.Tk):
         settings_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10, anchor='n')
         settings_frame.pack_propagate(False)
 
-        highlight_frame = tk.Frame(settings_frame, bd=1, relief="flat", highlightbackground="black", highlightcolor="black", highlightthickness=1)
-        highlight_frame.pack(fill=tk.BOTH, expand=True)
-
-        top_row = tk.Frame(highlight_frame)
-        top_row.pack(anchor='nw', pady=(8, 4), padx=8, fill=tk.X)
-
-        highlight_label = tk.Label(top_row, text="Highlight", font=("Arial", 10, "bold"))
-        highlight_label.pack(side=tk.LEFT)
- 
-        self.highlight_channel_var = tk.StringVar(value="None")
-        self.highlight_channel_dropdown = ttk.Combobox(
-            top_row, textvariable=self.highlight_channel_var, state="readonly", width=25, values=["None"] + sorted(self.df.columns)
-        )
-        self.highlight_channel_dropdown.pack(side=tk.LEFT, padx=(8, 0))
-
-        self.highlight_filter_entry = tk.Entry(top_row)
-        self.highlight_filter_entry.insert(0, "Search channels...")
-        self.highlight_filter_entry.pack(side=tk.LEFT, padx=(8, 0), fill=tk.X, expand=True)
-
-        self._last_highlight_filter_text = ""
-        def on_highlight_filter_entry_change(event):
-            new_text = self.highlight_filter_entry.get().strip()
-
-            if new_text != self._last_highlight_filter_text:
-                current_values = ["None"]
-                
-                if new_text == "":
-                    current_values.extend(sorted(self.df.columns))
-                else:
-                    for col in self.df.columns:
-                        if new_text.lower() in col.lower():
-                            current_values.append(col)
-                
-                self.highlight_channel_dropdown['values'] = current_values
-                self._last_highlight_filter_text = new_text
-
-        self.highlight_filter_entry.bind("<KeyRelease>", on_highlight_filter_entry_change)
-
-        filter_row = tk.Frame(highlight_frame)
-        filter_row.pack(anchor='nw', pady=(8, 4), padx=8, fill=tk.X)
-
-        filter_modes = ["==", ">=", "<=", ">", "<"]
-        filter_mode_var = tk.StringVar(value="==")
-        filter_mode_dropdown = ttk.Combobox(filter_row, textvariable=filter_mode_var, values=filter_modes, state="readonly", width=4)
-        filter_mode_dropdown.pack(side=tk.LEFT)
-
-        value_var = tk.StringVar(value="1")
-        value_entry = tk.Entry(filter_row, textvariable=value_var, width=10)
-        value_entry.pack(side=tk.LEFT, padx=(6, 0))
-
         color_values = {
             "red": "#FF0000",
             "orange": "#FFA500",
@@ -143,10 +93,83 @@ class Plotter(tk.Tk):
             "yellow": "#FFFF00",
         }
 
-        color_var = tk.StringVar(value="red")
-        color_dropdown = ttk.Combobox(filter_row, textvariable=color_var, values=list(color_values.keys()), state="readonly", width=8)
-        color_dropdown.pack(side=tk.LEFT, padx=(6, 0))
+        class HighlightCreator:
+            def __init__(self, df: pd.DataFrame, parent_frame):
+                self.df = df
+                self.parent_frame = parent_frame
+                self.highlight_configs = []
+            
+            def create_highlight_section(self):
+                highlight_frame = tk.Frame(self.parent_frame, bd=1, relief="flat", highlightbackground="black", highlightcolor="black", highlightthickness=1)
+                highlight_frame.pack(fill=tk.BOTH, expand=True)
 
+                top_row = tk.Frame(highlight_frame)
+                top_row.pack(anchor='nw', pady=(8, 4), padx=8, fill=tk.X)
+
+                highlight_label = tk.Label(top_row, text="Highlight", font=("Arial", 10, "bold"))
+                highlight_label.pack(side=tk.LEFT)
+        
+                highlight_channel_var = tk.StringVar(value="None")
+                highlight_channel_dropdown = ttk.Combobox(
+                    top_row, textvariable=highlight_channel_var, state="readonly", width=25, values=["None"] + sorted(self.df.columns)
+                )
+                highlight_channel_dropdown.pack(side=tk.LEFT, padx=(8, 0))
+
+                highlight_filter_entry = tk.Entry(top_row)
+                highlight_filter_entry.insert(0, "Search channels...")
+                highlight_filter_entry.pack(side=tk.LEFT, padx=(8, 0), fill=tk.X, expand=True)
+
+                _last_highlight_filter_text = ""
+                def on_highlight_filter_entry_change(event):
+                    nonlocal _last_highlight_filter_text
+                    new_text = highlight_filter_entry.get().strip()
+
+                    if new_text != _last_highlight_filter_text:
+                        current_values = ["None"]
+                        
+                        if new_text == "":
+                            current_values.extend(sorted(self.df.columns))
+                        else:
+                            for col in self.df.columns:
+                                if new_text.lower() in col.lower():
+                                    current_values.append(col)
+                        
+                        highlight_channel_dropdown['values'] = current_values
+                        _last_highlight_filter_text = new_text
+
+                highlight_filter_entry.bind("<KeyRelease>", on_highlight_filter_entry_change)
+
+                filter_row = tk.Frame(highlight_frame)
+                filter_row.pack(anchor='nw', pady=(8, 4), padx=8, fill=tk.X)
+
+                filter_modes = ["==", ">=", "<=", ">", "<"]
+                filter_mode_var = tk.StringVar(value="==")
+                filter_mode_dropdown = ttk.Combobox(filter_row, textvariable=filter_mode_var, values=filter_modes, state="readonly", width=4)
+                filter_mode_dropdown.pack(side=tk.LEFT)
+
+                value_var = tk.StringVar(value="1")
+                value_entry = tk.Entry(filter_row, textvariable=value_var, width=10)
+                value_entry.pack(side=tk.LEFT, padx=(6, 0))
+
+                color_var = tk.StringVar(value="red")
+                color_dropdown = ttk.Combobox(filter_row, textvariable=color_var, values=list(color_values.keys()), state="readonly", width=8)
+                color_dropdown.pack(side=tk.LEFT, padx=(6, 0))
+                
+                # Store the configuration for this highlight section
+                highlight_config = {
+                    'highlight_channel_var': highlight_channel_var,
+                    'filter_mode_var': filter_mode_var,
+                    'value_var': value_var,
+                    'color_var': color_var,
+                    'highlight_frame': highlight_frame
+                }
+                
+                self.highlight_configs.append(highlight_config)
+                return highlight_frame
+                
+            def get_highlight_configs(self):
+                return self.highlight_configs
+                
         plot_btn_frame = tk.Frame(right_frame)
         plot_btn_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=(3, 1))
 
