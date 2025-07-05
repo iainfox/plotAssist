@@ -112,14 +112,24 @@ class Plotter(tk.Tk):
         value_entry = tk.Entry(filter_row, textvariable=value_var, width=10)
         value_entry.pack(side=tk.LEFT, padx=(6, 0))
 
+        color_values = {
+            "red": "#FF0000",
+            "orange": "#FFA500",
+            "green": "#00FF00",
+            "blue": "#0000FF",
+            "magenta": "#FF00FF",
+            "cyan": "#00FFFF",
+            "yellow": "#FFFF00",
+        }
+
         color_options = [
-            "#FF0000",
-            "#FFA500",
-            "#00FF00",
-            "#0000FF",
-            "#FF00FF",
-            "#00FFFF",
-            "#FFFF00",
+            "red",
+            "orange",
+            "green",
+            "blue",
+            "magenta",
+            "cyan",
+            "yellow",
         ]
         color_var = tk.StringVar(value="red")
         color_dropdown = ttk.Combobox(filter_row, textvariable=color_var, values=color_options, state="readonly", width=8)
@@ -142,7 +152,7 @@ class Plotter(tk.Tk):
 
             fm = filter_mode_var.get()
             val = float(value_var.get())
-            color = color_var.get()
+            color = color_values[color_var.get()]
 
             match fm:
                 case "==":
