@@ -174,6 +174,10 @@ class Plotter(tk.Tk):
         # Create initial highlight area
         hc.create_highlight_section()
 
+        add_highlight_button = tk.Button(settings_frame, text="+", width=2, height=1, 
+                                       command=lambda: hc.create_highlight_section())
+        add_highlight_button.pack(side=tk.BOTTOM, anchor='sw', padx=5, pady=5)
+
         plot_btn_frame = tk.Frame(right_frame)
         plot_btn_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=(3, 1))
 
