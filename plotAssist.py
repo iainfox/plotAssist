@@ -6,11 +6,12 @@ import matplotlib.pyplot as plt
 df = pd.read_csv('example_dataframe.csv')
 
 class Plotter(tk.Tk):
-    def __init__(self, df: pd.DataFrame):
+    def __init__(self, df: pd.DataFrame, title: str):
         super().__init__()
         self.df = df
+        self.titleText = title
 
-        self.title("Plot Assist")
+        self.title(title)
         self.geometry("1050x400")
 
         left_frame = tk.Frame(self, width=300)
@@ -307,6 +308,7 @@ class Plotter(tk.Tk):
                 highlight(ax, self.df[channel])
 
             axes[-1].set_xlabel("Index")
+            fig.suptitle(self.titleText)
             plt.show()
 
         plot_btn = tk.Button(plot_btn_frame, text="Plot", command=plot)
@@ -405,9 +407,9 @@ class Plotter(tk.Tk):
             case _:
                 print(f"Unknown button index: {index}")
 
-def plot_assist(df):
-    app = Plotter(df)
+def plot_assist(df, title):
+    app = Plotter(df, title)
     app.mainloop()
 
 if __name__ == "__main__":
-    plot_assist(df)
+    plot_assist(df, "Plot Assist")
