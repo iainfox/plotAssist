@@ -475,5 +475,6 @@ def plot_assist_df(df, title):
     app.mainloop()
 
 if __name__ == "__main__":
-    df = pd.read_csv('example_dataframe.csv')
+    df = pd.read_csv('example_dataframe_time.csv', index_col=0)
+    df.index = pd.to_datetime(df.index)
     plot_assist_df(df, "Plot Assist")
