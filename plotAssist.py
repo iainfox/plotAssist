@@ -3,8 +3,6 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import matplotlib.pyplot as plt
 
-df = pd.read_csv('example_dataframe.csv')
-
 class Plotter(tk.Tk):
     def __init__(self, df: pd.DataFrame, title: str):
         super().__init__()
@@ -477,4 +475,5 @@ def plot_assist(df, title):
     app.mainloop()
 
 if __name__ == "__main__":
+    df = pd.read_csv('example_dataframe.csv')
     plot_assist(df, "Plot Assist")
