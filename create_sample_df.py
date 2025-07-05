@@ -5,7 +5,7 @@ n_points = 100
 time_seconds = np.linspace(0, 100, n_points)
 
 df = pd.DataFrame({
-    'linear': time_seconds,
+    'linear': range(0, n_points),
     'sine': np.sin(2 * np.pi * time_seconds / 20), 
     'cosine': np.cos(2 * np.pi * time_seconds / 20)
 })
