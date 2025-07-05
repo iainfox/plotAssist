@@ -470,10 +470,10 @@ class Plotter(tk.Tk):
             case _:
                 print(f"Unknown button index: {index}")
 
-def plot_assist(df, title):
+def plot_assist_df(df, title):
     app = Plotter(df, title)
     app.mainloop()
 
 if __name__ == "__main__":
     df = pd.read_csv('example_dataframe.csv')
-    plot_assist(df, "Plot Assist")
+    plot_assist_df(df, "Plot Assist")
