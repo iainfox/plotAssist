@@ -143,7 +143,7 @@ class Plotter(tk.Tk):
                 filter_row = tk.Frame(highlight_frame)
                 filter_row.pack(anchor='nw', pady=(8, 4), padx=8, fill=tk.X)
 
-                filter_modes = ["==", ">=", "<=", ">", "<"]
+                filter_modes = ["==", ">=", "<=", ">", "<", "isin"]
                 filter_mode_var = tk.StringVar(value="==")
                 filter_mode_dropdown = ttk.Combobox(filter_row, textvariable=filter_mode_var, values=filter_modes, state="readonly", width=4)
                 filter_mode_dropdown.pack(side=tk.LEFT)
@@ -200,15 +200,11 @@ class Plotter(tk.Tk):
                     
                 channel_data = self.df[channel_name]
                 
-                filter_modes = ["==", ">=", "<=", ">", "<"]
+                filter_modes = ["==", ">=", "<=", ">", "<", "isin"]
                 if filter_mode_var.get() not in filter_modes:
                     continue
                     
                 if value_var.get() in (None, ""):
-                    continue
-                try:
-                    val = float(value_var.get())
-                except ValueError:
                     continue
 
                 fm = filter_mode_var.get()
@@ -216,6 +212,10 @@ class Plotter(tk.Tk):
 
                 match fm:
                     case "==":
+                        try:
+                            val = float(value_var.get())
+                        except ValueError:
+                            continue
                         highlighting = False
                         start = None
                         for i, v in enumerate(channel_data):
@@ -228,6 +228,10 @@ class Plotter(tk.Tk):
                         if highlighting and start is not None:
                             ax.axvspan(start, len(channel_data), color=color, alpha=0.5)
                     case ">=": 
+                        try:
+                            val = float(value_var.get())
+                        except ValueError:
+                            continue
                         highlighting = False
                         start = None
                         for i, v in enumerate(channel_data):
@@ -240,6 +244,10 @@ class Plotter(tk.Tk):
                         if highlighting and start is not None:
                             ax.axvspan(start, len(channel_data), color=color, alpha=0.5)
                     case "<=":
+                        try:
+                            val = float(value_var.get())
+                        except ValueError:
+                            continue
                         highlighting = False
                         start = None
                         for i, v in enumerate(channel_data):
@@ -252,6 +260,10 @@ class Plotter(tk.Tk):
                         if highlighting and start is not None:
                             ax.axvspan(start, len(channel_data), color=color, alpha=0.5)
                     case ">":
+                        try:
+                            val = float(value_var.get())
+                        except ValueError:
+                            continue
                         highlighting = False
                         start = None
                         for i, v in enumerate(channel_data):
@@ -264,6 +276,10 @@ class Plotter(tk.Tk):
                         if highlighting and start is not None:
                             ax.axvspan(start, len(channel_data), color=color, alpha=0.5)
                     case "<":
+                        try:
+                            val = float(value_var.get())
+                        except ValueError:
+                            continue
                         highlighting = False
                         start = None
                         for i, v in enumerate(channel_data):
@@ -275,7 +291,20 @@ class Plotter(tk.Tk):
                                 ax.axvspan(start, i, color=color, alpha=0.5)
                         if highlighting and start is not None:
                             ax.axvspan(start, len(channel_data), color=color, alpha=0.5)
-
+                    case "isin":
+                        val_str = value_var.get()
+                        vals = val_str.split(",")
+                        highlighting = False
+                        start = None
+                        for i, v in enumerate(channel_data):
+                            if str(v) in vals and not highlighting:
+                                highlighting = True
+                                start = i
+                            elif str(v) not in vals and highlighting:
+                                highlighting = False
+                                ax.axvspan(start, i, color=color, alpha=0.5)
+                        if highlighting and start is not None:
+                            ax.axvspan(start, len(channel_data), color=color, alpha=0.5)
         def plot():
             if not hasattr(self, "selected_items_meta") or not self.selected_items_meta:
                 return
