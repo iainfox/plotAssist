@@ -219,12 +219,12 @@ class Plotter(tk.Tk):
                         for i, v in enumerate(channel_data):
                             if v == val and not highlighting:
                                 highlighting = True
-                                start = i
+                                start = self.df.index[i]
                             elif v != val and highlighting:
                                 highlighting = False
-                                ax.axvspan(start, i, color=color, alpha=0.5)
+                                ax.axvspan(start, self.df.index[i], color=color, alpha=0.5)
                         if highlighting and start is not None:
-                            ax.axvspan(start, len(channel_data), color=color, alpha=0.5)
+                            ax.axvspan(start, self.df.index[-1], color=color, alpha=0.5)
                     case ">=": 
                         try:
                             val = float(value_var.get())
@@ -235,12 +235,12 @@ class Plotter(tk.Tk):
                         for i, v in enumerate(channel_data):
                             if v >= val and not highlighting:
                                 highlighting = True
-                                start = i
+                                start = self.df.index[i]
                             elif v < val and highlighting:
                                 highlighting = False
-                                ax.axvspan(start, i, color=color, alpha=0.5)
+                                ax.axvspan(start, self.df.index[i], color=color, alpha=0.5)
                         if highlighting and start is not None:
-                            ax.axvspan(start, len(channel_data), color=color, alpha=0.5)
+                            ax.axvspan(start, self.df.index[-1], color=color, alpha=0.5)
                     case "<=":
                         try:
                             val = float(value_var.get())
@@ -251,12 +251,12 @@ class Plotter(tk.Tk):
                         for i, v in enumerate(channel_data):
                             if v <= val and not highlighting:
                                 highlighting = True
-                                start = i
+                                start = self.df.index[i]
                             elif v > val and highlighting:
                                 highlighting = False
-                                ax.axvspan(start, i, color=color, alpha=0.5)
+                                ax.axvspan(start, self.df.index[i], color=color, alpha=0.5)
                         if highlighting and start is not None:
-                            ax.axvspan(start, len(channel_data), color=color, alpha=0.5)
+                            ax.axvspan(start, self.df.index[-1], color=color, alpha=0.5)
                     case ">":
                         try:
                             val = float(value_var.get())
@@ -267,12 +267,12 @@ class Plotter(tk.Tk):
                         for i, v in enumerate(channel_data):
                             if v > val and not highlighting:
                                 highlighting = True
-                                start = i
+                                start = self.df.index[i]
                             elif v <= val and highlighting:
                                 highlighting = False
-                                ax.axvspan(start, i, color=color, alpha=0.5)
+                                ax.axvspan(start, self.df.index[i], color=color, alpha=0.5)
                         if highlighting and start is not None:
-                            ax.axvspan(start, len(channel_data), color=color, alpha=0.5)
+                            ax.axvspan(start, self.df.index[-1], color=color, alpha=0.5)
                     case "<":
                         try:
                             val = float(value_var.get())
@@ -283,12 +283,12 @@ class Plotter(tk.Tk):
                         for i, v in enumerate(channel_data):
                             if v < val and not highlighting:
                                 highlighting = True
-                                start = i
+                                start = self.df.index[i]
                             elif v >= val and highlighting:
                                 highlighting = False
-                                ax.axvspan(start, i, color=color, alpha=0.5)
+                                ax.axvspan(start, self.df.index[i], color=color, alpha=0.5)
                         if highlighting and start is not None:
-                            ax.axvspan(start, len(channel_data), color=color, alpha=0.5)
+                            ax.axvspan(start, self.df.index[-1], color=color, alpha=0.5)
                     case "isin":
                         val_str = value_var.get()
                         vals = val_str.split(",")
@@ -297,12 +297,12 @@ class Plotter(tk.Tk):
                         for i, v in enumerate(channel_data):
                             if str(v) in vals and not highlighting:
                                 highlighting = True
-                                start = i
+                                start = self.df.index[i]
                             elif str(v) not in vals and highlighting:
                                 highlighting = False
-                                ax.axvspan(start, i, color=color, alpha=0.5)
+                                ax.axvspan(start, self.df.index[i], color=color, alpha=0.5)
                         if highlighting and start is not None:
-                            ax.axvspan(start, len(channel_data), color=color, alpha=0.5)
+                            ax.axvspan(start, self.df.index[-1], color=color, alpha=0.5)
         def plot():
             if not hasattr(self, "selected_items_meta") or not self.selected_items_meta:
                 return
