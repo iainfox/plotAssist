@@ -288,14 +288,6 @@ class Plotter(tk.Tk):
         plot_btn = tk.Button(plot_btn_frame, text="Plot", command=plot)
         plot_btn.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
-    def update_highlight_dropdown(self, event=None):
-            items = [self.selected_listbox.get(i) for i in range(self.selected_listbox.size())]
-            values = ["None"] + items
-            current = self.highlight_channel_var.get()
-            self.highlight_channel_dropdown['values'] = values
-            if current not in values:
-                self.highlight_channel_var.set("None")
-
     def buttonClick(self, index):
         if not hasattr(self, "selected_items_meta"):
             self.selected_items_meta = []
@@ -327,7 +319,6 @@ class Plotter(tk.Tk):
                     for i, item in enumerate(visible):
                         self.selected_items_meta.append({'name': item, 'group': group_num + i})
                     sync_listbox_with_meta()
-                    self.update_highlight_dropdown()
 
             case 1:  # "[>>]"
                 visible = get_visible_left_items()
@@ -336,7 +327,6 @@ class Plotter(tk.Tk):
                     for item in visible:
                         self.selected_items_meta.append({'name': item, 'group': group_num})
                     sync_listbox_with_meta()
-                    self.update_highlight_dropdown()
 
             case 2:  # ">"
                 selected = get_selected_items(self.listbox)
@@ -345,7 +335,6 @@ class Plotter(tk.Tk):
                     for i, item in enumerate(selected):
                         self.selected_items_meta.append({'name': item, 'group': group_num + i})
                     sync_listbox_with_meta()
-                    self.update_highlight_dropdown()
 
             case 3:  # "[>]"
                 selected = get_selected_items(self.listbox)
@@ -354,7 +343,6 @@ class Plotter(tk.Tk):
                     for item in selected:
                         self.selected_items_meta.append({'name': item, 'group': group_num})
                     sync_listbox_with_meta()
-                    self.update_highlight_dropdown()
 
             case 4:  # "↑"
                 sel = get_selected_meta_indices()
@@ -386,12 +374,10 @@ class Plotter(tk.Tk):
                     for i in reversed(sel):
                         del self.selected_items_meta[i]
                     sync_listbox_with_meta()
-                    self.update_highlight_dropdown()
 
             case 7:  # "<<"
                 self.selected_items_meta.clear()
                 sync_listbox_with_meta()
-                self.update_highlight_dropdown()
             case _:
                 print(f"Unknown button index: {index}")
 
