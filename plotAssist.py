@@ -177,9 +177,10 @@ class DataHandler():
                             current_ch_group = channel_dict[ch_name]
                             if current_ch_group == target_group:
                                 channel_dict[ch_name] = max(1, current_ch_group - 1)
+
+        self.selected_channels.sort(key=lambda x: list(x.values())[0])
         
         return self.reorder_groups()
-
 class HighlightCreator:
     def __init__(self, data_handler: DataHandler, parent_frame):
         self.data_handler = data_handler
