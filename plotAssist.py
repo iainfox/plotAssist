@@ -356,9 +356,6 @@ class Plotter(tk.Tk):
         def get_selected_items(listbox):
             return [listbox.get(i) for i in listbox.curselection()]
 
-        def get_selected_meta_indices():
-            return list(self.selected_listbox.curselection())
-
         def get_next_group_number():
             if not self.selected_items_meta:
                 return 1
@@ -408,7 +405,7 @@ class Plotter(tk.Tk):
                     sync_listbox_with_meta()
 
             case 4: # "[<>]"
-                sel = get_selected_meta_indices()
+                sel = get_selected_items(self.selected_listbox)
                 if not sel:
                     return
                     
@@ -422,7 +419,7 @@ class Plotter(tk.Tk):
                 sync_listbox_with_meta()
 
             case 5: # "[><]"
-                sel = get_selected_meta_indices()
+                sel = get_selected_items(self.selected_listbox)
                 if not sel:
                     return
                     
@@ -433,7 +430,7 @@ class Plotter(tk.Tk):
                 sync_listbox_with_meta()
             
             case 6:  # "↑"
-                sel = get_selected_meta_indices()
+                sel = get_selected_items(self.selected_listbox)
                 if not sel:
                     return
                 for i in sel:
@@ -445,7 +442,7 @@ class Plotter(tk.Tk):
                     self.selected_listbox.selection_set(i)
 
             case 7:  # "↓"
-                sel = get_selected_meta_indices()
+                sel = get_selected_items(self.selected_listbox)
                 if not sel:
                     return
                 for i in reversed(sel):
@@ -457,7 +454,7 @@ class Plotter(tk.Tk):
                     self.selected_listbox.selection_set(i)
 
             case 8:  # "<"
-                sel = get_selected_meta_indices()
+                sel = get_selected_items(self.selected_listbox)
                 if sel:
                     for i in reversed(sel):
                         del self.selected_items_meta[i]
