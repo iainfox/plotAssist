@@ -427,8 +427,10 @@ class Plotter(tk.Tk):
             ax.grid(True, which='both', linestyle='--', alpha=0.6)
             ax.set_ylabel(f"Group {group_num}")
             ax.legend(loc='upper right', fontsize=8)
-            if ax_idx != 0:
-                ax.spines['top'].set_visible(False)
+            ax.spines['top'].set_visible(True)
+            ax.spines['bottom'].set_visible(True)
+            ax.spines['left'].set_visible(True)
+            ax.spines['right'].set_visible(True)
 
             self.highlight(ax)
 
