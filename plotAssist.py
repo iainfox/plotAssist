@@ -1,3 +1,4 @@
+from copy import copy
 import pandas as pd
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -12,6 +13,26 @@ COLORS = {
     "cyan": "#00FFFF",
     "yellow": "#FFFF00",
 }
+
+class DataHandler():
+    def __init__(self, available_channels: list[str]) -> None:
+        self.available_channels = available_channels
+        self.selected_channels: list[dict[str, int]] = []
+        self.current_group = 1
+    
+    def get_next_group(self):
+        current = self.current_group
+        self.current_group += 1
+        return current
+
+    def select_channel(self, channels: list[str]) -> list[dict[str, int]]:
+        new_channels: list[dict[str, int]] = []
+        for channel in channels:
+            group = self.get_next_group()
+            new_channels.append({channel: group})
+            
+        self.selected_channels.extend(new_channels)
+        return new_channels
 
 class HighlightCreator:
     def __init__(self, df: pd.DataFrame, parent_frame):
