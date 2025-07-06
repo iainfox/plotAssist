@@ -408,7 +408,7 @@ class Plotter(tk.Tk):
         sorted_groups = sorted(groups.items(), key=lambda x: x[0])
 
         n_groups = len(sorted_groups)
-        fig, axes = plt.subplots(n_groups, 1, sharex=True, sharey=False, figsize=(8, 2.5 * n_groups), constrained_layout=True)
+        fig, axes = plt.subplots(n_groups, 1, sharex=True, sharey=False, figsize=(8, 2.5 * n_groups))
         if n_groups == 1:
             axes = [axes]
         else:
@@ -434,6 +434,7 @@ class Plotter(tk.Tk):
         axes[-1].set_xlabel("Index")
         fig.suptitle(self.titleText)
         fig.canvas.mpl_connect('button_press_event', self._on_click)
+        plt.tight_layout()
         if self._fig is not None:
             self._fig.canvas.draw_idle()
         plt.show()
@@ -566,6 +567,9 @@ class Plotter(tk.Tk):
                         ax.axvspan(start, self.data_handler.index[-1], color=color, alpha=0.5)
 
     def _on_click(self, event):
+        if hasattr(event.canvas, "toolbar") and getattr(event.canvas.toolbar, "mode", None):
+            return
+
         if not hasattr(self, '_axes') or len(self._axes) == 0:
             return
 
