@@ -21,9 +21,8 @@ class DataHandler(): # TODO: add combine, split, move, and remove methods
         self.current_group = 1
     
     def get_next_group(self):
-        current = self.current_group
         self.current_group += 1
-        return current
+        return self.current_group -1
 
     def select_channels(self, channels: list[str], keep_group = False) -> list[dict[str, int]]:
         new_channels: list[dict[str, int]] = []
