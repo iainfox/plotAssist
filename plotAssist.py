@@ -658,14 +658,13 @@ class Plotter(tk.Tk):
             data_at_time = df.loc[closest_time]
             print()
             print(f"Right click at time: {closest_time}")
-            print("Data at this time:")
-            for col in df.columns:
-                print(f"{col}: {data_at_time[col]}")
+            print("Data at this time (shown):")
             for ax in self._axes:
                 for line in ax.get_lines():
                     if line.get_label() in df.columns:
                         column = line.get_label()
                         value = data_at_time[column]
+                        print(f"{column}: {value}")
                         if isinstance(idx, pd.DatetimeIndex):
                             x_plot = float(mdates.date2num(closest_time))
                         else:
