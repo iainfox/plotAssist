@@ -555,18 +555,22 @@ class Plotter(tk.Tk):
                 case "isin":
                     val_str = value_var.get()
                     vals = [s.strip() for s in val_str.split(",")]
-                    highlighting = False
-                    start = None
-                    for i, v in enumerate(channel_data):
-                        if str(v) in vals and not highlighting:
-                            highlighting = True
-                            start = self.data_handler.index[i]
-                        elif str(v) not in vals and highlighting:
-                            highlighting = False
-                            ax.axvspan(start, self.data_handler.index[i-1], color=color, alpha=0.5)
-                    if highlighting and start is not None:
-                        ax.axvspan(start, self.data_handler.index[-1], color=color, alpha=0.5)
-
+                    for val in vals:
+                        try:
+                            val_float = float(val)
+                        except ValueError:
+                            continue
+                        highlighting = False
+                        start = None
+                        for i, v in enumerate(channel_data):
+                            if v == val_float and not highlighting:
+                                highlighting = True
+                                start = self.data_handler.index[i]
+                            elif v != val_float and highlighting:
+                                highlighting = False
+                                ax.axvspan(start, self.data_handler.index[i-1], color=color, alpha=0.5)
+                        if highlighting and start is not None:
+                            ax.axvspan(start, self.data_handler.index[-1], color=color, alpha=0.5)
     def _on_click(self, event):
         start = int(time.time() * 1000)
         if getattr(getattr(event.canvas, "toolbar", None), "mode", None):
