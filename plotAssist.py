@@ -583,63 +583,47 @@ class Plotter(tk.Tk):
             return
 
         df = self.data_handler.df
-        x_pos = event.xdata
-        # Robust index mapping
+        x_click = event.xdata
+        y_click = event.ydata
         idx = self.data_handler.index
-        if isinstance(idx, pd.DatetimeIndex):
-            # Convert xdata (matplotlib float) to datetime
-            x_datetime = mdates.num2date(x_pos)
-            try:
-                idx_values = idx.values
-                x_ts = pd.Timestamp(x_datetime)
-                if x_ts is pd.NaT:
-                    raise ValueError("x_datetime could not be converted to a valid Timestamp")
-                x_dt64 = x_ts.to_datetime64()
-                time_diffs = np.abs(idx_values - x_dt64)
-            except Exception:
-                try:
-                    x_ts = pd.Timestamp(x_datetime)
-                    time_diffs = np.abs(idx - x_ts)
-                except Exception:
-                    idx_float = np.array([d.timestamp() for d in idx])
-                    x_float = x_datetime.timestamp()
-                    time_diffs = np.abs(idx_float - x_float)
-            closest_idx = np.argmin(time_diffs)
-            closest_time = idx[closest_idx]
-        else:
-            try:
-                idx_arr = np.asarray(idx)
-                time_diffs = np.abs(idx_arr - x_pos)
-            except Exception:
-                idx_arr = np.array(list(idx))
-                time_diffs = np.abs(idx_arr - x_pos)
-            closest_idx = np.argmin(time_diffs)
-            closest_time = idx[closest_idx]
 
         if event.button == 1 and clicked_ax is not None:
-            y_pos = event.ydata
-            closest_line = None
-            min_distance = float('inf')
+            min_dist = float('inf')
+            closest_info = None
+            xlim = clicked_ax.get_xlim()
+            ylim = clicked_ax.get_ylim()
+            def norm(val, lim):
+                return (val - lim[0]) / (lim[1] - lim[0]) if lim[1] != lim[0] else 0.5
+            x_click_norm = norm(x_click, xlim)
+            y_click_norm = norm(y_click, ylim)
             for line in clicked_ax.get_lines():
-                if line.get_label() in df.columns:
-                    y_value = df.loc[closest_time, line.get_label()]
-                    distance = abs(y_value - y_pos)
-                    if distance < min_distance:
-                        min_distance = distance
-                        closest_line = line
-            if closest_line:
-                column = closest_line.get_label()
-                value = df.loc[closest_time, column]
-                print(f"Left click at time: {closest_time}")
+                label = line.get_label()
+                if label not in df.columns:
+                    continue
+                ydata = df[label].values
+                if isinstance(idx, pd.DatetimeIndex):
+                    xdata = mdates.date2num(idx)
+                else:
+                    xdata = np.asarray(idx)
+                for i, (x_val, y_val) in enumerate(zip(xdata, ydata)):
+                    x_val_norm = norm(x_val, xlim)
+                    y_val_norm = norm(y_val, ylim)
+                    dist = np.hypot(x_val_norm - x_click_norm, y_val_norm - y_click_norm)
+                    if dist < min_dist:
+                        min_dist = dist
+                        closest_info = (line, x_val, y_val, idx[i], label)
+            if closest_info is not None:
+                line, x_val, y_val, idx_val, col_name = closest_info
+                print(f"Left click closest point: {idx_val}")
                 print(f"Subplot: {list(self._axes).index(clicked_ax) + 1}")
-                print(f"Closest line: {column}")
-                print(f"Data: {column}: {value}")
-                clicked_ax.plot(float(mdates.date2num(closest_time)), value, marker='o', markersize=4,
-                                markerfacecolor=closest_line.get_color(), markeredgecolor='black',
-                                markeredgewidth=1, linestyle='None', zorder=5, label='_nolegend_')
-                clicked_ax.annotate(
-                    f"{column}: {value:.2f}",
-                    xy=(float(mdates.date2num(closest_time)), value),
+                print(f"Closest line: {col_name}")
+                print(f"Data: {col_name}: {y_val}")
+                marker = clicked_ax.plot(x_val, y_val, marker='o', markersize=4,
+                                         markerfacecolor=line.get_color(), markeredgecolor='black',
+                                         markeredgewidth=1, linestyle='None', zorder=5, label='_nolegend_')[0]
+                annotation = clicked_ax.annotate(
+                    f"{col_name}: {y_val:.2f}",
+                    xy=(x_val, y_val),
                     xytext=(0, 10),
                     textcoords='offset points',
                     ha='center',
@@ -648,6 +632,34 @@ class Plotter(tk.Tk):
                     fontsize=8
                 )
         elif event.button == 3:
+            if isinstance(idx, pd.DatetimeIndex):
+                x_datetime = mdates.num2date(x_click)
+                try:
+                    idx_values = idx.values
+                    x_ts = pd.Timestamp(x_datetime)
+                    if x_ts is pd.NaT:
+                        raise ValueError("x_datetime could not be converted to a valid Timestamp")
+                    x_dt64 = x_ts.to_datetime64()
+                    time_diffs = np.abs(idx_values - x_dt64)
+                except Exception:
+                    try:
+                        x_ts = pd.Timestamp(x_datetime)
+                        time_diffs = np.abs(idx - x_ts)
+                    except Exception:
+                        idx_float = np.array([d.timestamp() for d in idx])
+                        x_float = x_datetime.timestamp()
+                        time_diffs = np.abs(idx_float - x_float)
+                closest_idx = np.argmin(time_diffs)
+                closest_time = idx[closest_idx]
+            else:
+                try:
+                    idx_arr = np.asarray(idx)
+                    time_diffs = np.abs(idx_arr - x_click)
+                except Exception:
+                    idx_arr = np.array(list(idx))
+                    time_diffs = np.abs(idx_arr - x_click)
+                closest_idx = np.argmin(time_diffs)
+                closest_time = idx[closest_idx]
             data_at_time = df.loc[closest_time]
             print(f"Right click at time: {closest_time}")
             print("Data at this time:")
@@ -656,13 +668,16 @@ class Plotter(tk.Tk):
                     if line.get_label() in df.columns:
                         column = line.get_label()
                         value = data_at_time[column]
-                        print(f"  {column}: {value}")
-                        ax.plot(float(mdates.date2num(closest_time)), value, marker='o', markersize=4,
+                        if isinstance(idx, pd.DatetimeIndex):
+                            x_plot = float(mdates.date2num(closest_time))
+                        else:
+                            x_plot = float(np.asarray(closest_time))
+                        ax.plot(x_plot, value, marker='o', markersize=4,
                                 markerfacecolor=line.get_color(), markeredgecolor='black', markeredgewidth=1,
                                 linestyle='None', zorder=5, label='_nolegend_')
                         ax.annotate(
                             f"{column}: {value:.2f}",
-                            xy=(float(mdates.date2num(closest_time)), value),
+                            xy=(x_plot, value),
                             xytext=(0, 10),
                             textcoords='offset points',
                             ha='center',
