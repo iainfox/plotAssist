@@ -42,7 +42,7 @@ case 3:  # "[>]"
 
 class DataHandler():
     def __init__(self, available_channels: list[str]) -> None:
-        self.available_channels = available_channels
+        self.available_channels = sorted(available_channels)
         self.selected_channels: list[dict[str, int]] = []
         self.current_group = 1
     
@@ -62,9 +62,9 @@ class DataHandler():
             for channel in channels:
                 new_channels.append({channel: group})    
 
+        new_channels = sorted(new_channels, key=lambda x: list(x.keys())[0])
         self.selected_channels.extend(new_channels)
         return new_channels
-
 class HighlightCreator:
     def __init__(self, df: pd.DataFrame, parent_frame):
         self.df = df
