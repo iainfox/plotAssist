@@ -14,7 +14,7 @@ COLORS = {
     "yellow": "#FFFF00",
 }
 
-class DataHandler(): # TODO: add combine, split, move, and remove methods
+class DataHandler(): # TODO: add move, and remove methods
     def __init__(self, available_channels: list[str]) -> None:
         self.available_channels = sorted(available_channels)
         self.selected_channels: list[dict[str, int]] = []
@@ -54,9 +54,46 @@ class DataHandler(): # TODO: add combine, split, move, and remove methods
         self.selected_channels.extend(new_channels)
         return new_channels
     
-    def combine_channels(self):
-        pass
+    def combine_channels(self, channels: list[str]) -> list[dict[str, int]]:
+        base_group = None
+        for channel_dict in self.selected_channels:
+            channel_name = list(channel_dict.keys())[0]
+            if channel_name in channels:
+                base_group = channel_dict[channel_name]
+                break
         
+        if base_group is None:
+            return self.selected_channels
+        
+        for channel_dict in self.selected_channels:
+            channel_name = list(channel_dict.keys())[0]
+            if channel_name in channels:
+                channel_dict[channel_name] = base_group
+        
+        unique_groups = sorted(set(channel_dict[list(channel_dict.keys())[0]] for channel_dict in self.selected_channels))
+        group_mapping = {old_group: new_group for new_group, old_group in enumerate(unique_groups, 1)}
+        
+        for channel_dict in self.selected_channels:
+            channel_name = list(channel_dict.keys())[0]
+            channel_dict[channel_name] = group_mapping[channel_dict[channel_name]]
+        
+        return self.selected_channels
+    
+    def split_channels(self, channels: list[str]) -> list[dict[str, int]]:
+        for channel_dict in self.selected_channels:
+            channel_name = list(channel_dict.keys())[0]
+            if channel_name in channels:
+                channel_dict[channel_name] = self.get_next_group()
+        
+        unique_groups = sorted(set(channel_dict[list(channel_dict.keys())[0]] for channel_dict in self.selected_channels))
+        group_mapping = {old_group: new_group for new_group, old_group in enumerate(unique_groups, 1)}
+        
+        for channel_dict in self.selected_channels:
+            channel_name = list(channel_dict.keys())[0]
+            channel_dict[channel_name] = group_mapping[channel_dict[channel_name]]
+        
+        return self.selected_channels
+
 class HighlightCreator:
     def __init__(self, df: pd.DataFrame, parent_frame):
         self.df = df
