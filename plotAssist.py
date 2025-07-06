@@ -17,6 +17,13 @@ COLORS = {
 
 class DataHandler():
     def __init__(self, df: pd.DataFrame) -> None:
+        # Data validation
+        idx = df.index
+        if not (isinstance(idx, pd.DatetimeIndex) or pd.api.types.is_integer_dtype(idx) or pd.api.types.is_float_dtype(idx)):
+            raise ValueError("DataFrame index must be DatetimeIndex or numeric.")
+        for col in df.columns:
+            if not pd.api.types.is_numeric_dtype(df[col]):
+                raise ValueError(f"Column '{col}' must be numeric for plotting/highlighting.")
         self.df = df
         self.available_channels = sorted(df.columns)
         self.selected_channels: list[dict[str, int]] = []
@@ -50,6 +57,8 @@ class DataHandler():
         return new_channels
     
     def select_all_channels(self, listbox: tk.Listbox, keep_group = False) -> list[dict[str, int]]:
+        if not isinstance(listbox, tk.Listbox):
+            raise TypeError("Expected a tk.Listbox instance.")
         channels = list(listbox.get(0, tk.END))
         return self.select_channels(channels, keep_group)
     
@@ -98,21 +107,20 @@ class DataHandler():
         return self.reorder_groups()
     
     def remove_all_channels(self, listbox) -> list[dict[str, int]]:
+        if not isinstance(listbox, tk.Listbox):
+            raise TypeError("Expected a tk.Listbox instance.")
         visible_items = list(listbox.get(0, tk.END))
         channels_to_remove = []
-        
         for item in visible_items:
             if ' [' in item:
                 channel_name = item.split(' [')[0]
                 channels_to_remove.append(channel_name)
             else:
                 channels_to_remove.append(item)
-
         self.selected_channels = [
             channel_dict for channel_dict in self.selected_channels
             if list(channel_dict.keys())[0] not in channels_to_remove
         ]
-        
         return self.reorder_groups()
     
     def move(self, channels: list[str], direction: str) -> list[dict[str, int]]:
@@ -242,14 +250,12 @@ class HighlightCreator:
 
             if new_text != _last_highlight_filter_text:
                 current_values = ["None"]
-                
                 if new_text == "":
                     current_values.extend(sorted(self.data_handler.available_channels))
                 else:
                     for col in self.data_handler.available_channels:
                         if new_text.lower() in col.lower():
                             current_values.append(col)
-                
                 highlight_channel_dropdown['values'] = current_values
                 _last_highlight_filter_text = new_text
 
@@ -270,6 +276,12 @@ class HighlightCreator:
         color_var = tk.StringVar(value="red")
         color_dropdown = ttk.Combobox(filter_row, textvariable=color_var, values=list(COLORS.keys()), state="readonly", width=8)
         color_dropdown.pack(side=tk.LEFT, padx=(6, 0))
+
+        def remove_highlight():
+            highlight_frame.destroy()
+            self.highlight_configs[:] = [cfg for cfg in self.highlight_configs if cfg['highlight_frame'] != highlight_frame]
+        remove_btn = tk.Button(filter_row, text="Remove", command=remove_highlight, width=7)
+        remove_btn.pack(side=tk.LEFT, padx=(8, 0))
         
         # Store the configuration for this highlight section
         highlight_config = {
@@ -279,7 +291,6 @@ class HighlightCreator:
             'color_var': color_var,
             'highlight_frame': highlight_frame
         }
-        
         self.highlight_configs.append(highlight_config)
         return highlight_frame
         
@@ -325,7 +336,7 @@ class Plotter(tk.Tk):
 
         self.filter_entry.bind("<KeyRelease>", on_filter_entry_change)
 
-        list_label = tk.Label(filter_label_frame, text="Available Chanels")
+        list_label = tk.Label(filter_label_frame, text="Available Channels")
         list_label.pack(side=tk.RIGHT, anchor='e')
 
         self.listbox = tk.Listbox(left_frame, selectmode=tk.EXTENDED, activestyle='none')
@@ -472,7 +483,7 @@ class Plotter(tk.Tk):
                             start = self.data_handler.index[i]
                         elif v != val and highlighting:
                             highlighting = False
-                            ax.axvspan(start, self.data_handler.index[i], color=color, alpha=0.5)
+                            ax.axvspan(start, self.data_handler.index[i-1], color=color, alpha=0.5)
                     if highlighting and start is not None:
                         ax.axvspan(start, self.data_handler.index[-1], color=color, alpha=0.5)
                 case ">=": 
@@ -488,7 +499,7 @@ class Plotter(tk.Tk):
                             start = self.data_handler.index[i]
                         elif v < val and highlighting:
                             highlighting = False
-                            ax.axvspan(start, self.data_handler.index[i], color=color, alpha=0.5)
+                            ax.axvspan(start, self.data_handler.index[i-1], color=color, alpha=0.5)
                     if highlighting and start is not None:
                         ax.axvspan(start, self.data_handler.index[-1], color=color, alpha=0.5)
                 case "<=":
@@ -504,7 +515,7 @@ class Plotter(tk.Tk):
                             start = self.data_handler.index[i]
                         elif v > val and highlighting:
                             highlighting = False
-                            ax.axvspan(start, self.data_handler.index[i], color=color, alpha=0.5)
+                            ax.axvspan(start, self.data_handler.index[i-1], color=color, alpha=0.5)
                     if highlighting and start is not None:
                         ax.axvspan(start, self.data_handler.index[-1], color=color, alpha=0.5)
                 case ">":
@@ -520,7 +531,7 @@ class Plotter(tk.Tk):
                             start = self.data_handler.index[i]
                         elif v <= val and highlighting:
                             highlighting = False
-                            ax.axvspan(start, self.data_handler.index[i], color=color, alpha=0.5)
+                            ax.axvspan(start, self.data_handler.index[i-1], color=color, alpha=0.5)
                     if highlighting and start is not None:
                         ax.axvspan(start, self.data_handler.index[-1], color=color, alpha=0.5)
                 case "<":
@@ -536,12 +547,12 @@ class Plotter(tk.Tk):
                             start = self.data_handler.index[i]
                         elif v >= val and highlighting:
                             highlighting = False
-                            ax.axvspan(start, self.data_handler.index[i], color=color, alpha=0.5)
+                            ax.axvspan(start, self.data_handler.index[i-1], color=color, alpha=0.5)
                     if highlighting and start is not None:
                         ax.axvspan(start, self.data_handler.index[-1], color=color, alpha=0.5)
                 case "isin":
                     val_str = value_var.get()
-                    vals = val_str.split(",")
+                    vals = [s.strip() for s in val_str.split(",")]
                     highlighting = False
                     start = None
                     for i, v in enumerate(channel_data):
@@ -550,7 +561,7 @@ class Plotter(tk.Tk):
                             start = self.data_handler.index[i]
                         elif str(v) not in vals and highlighting:
                             highlighting = False
-                            ax.axvspan(start, self.data_handler.index[i], color=color, alpha=0.5)
+                            ax.axvspan(start, self.data_handler.index[i-1], color=color, alpha=0.5)
                     if highlighting and start is not None:
                         ax.axvspan(start, self.data_handler.index[-1], color=color, alpha=0.5)
 
@@ -568,12 +579,20 @@ class Plotter(tk.Tk):
             return
 
         df = self.data_handler.df
-
         x_pos = event.xdata
-        x_timestamp = pd.Timestamp(x_pos, unit='D')
-        time_diffs = np.abs(df.index - x_timestamp)
-        closest_idx = np.argmin(time_diffs)
-        closest_time = df.index[closest_idx]
+        # Robust index mapping
+        idx = self.data_handler.index
+        if isinstance(idx, pd.DatetimeIndex):
+            # Convert xdata (matplotlib float) to datetime
+            x_datetime = mdates.num2date(x_pos)
+            time_diffs = np.abs(idx - pd.Timestamp(x_datetime))
+            closest_idx = np.argmin(time_diffs)
+            closest_time = idx[closest_idx]
+        else:
+            # Numeric index
+            time_diffs = np.abs(idx - x_pos)
+            closest_idx = np.argmin(time_diffs)
+            closest_time = idx[closest_idx]
 
         if event.button == 1 and clicked_ax is not None:
             y_pos = event.ydata
