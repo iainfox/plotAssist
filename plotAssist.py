@@ -117,74 +117,91 @@ class DataHandler():
         if direction not in ["up", "down"]:
             return self.selected_channels
         
-        channels_to_move = []
+        groups_to_move = set()
         for channel_dict in self.selected_channels:
             channel_name = list(channel_dict.keys())[0]
             if channel_name in channels:
-                channels_to_move.append((channel_name, channel_dict[channel_name]))
+                groups_to_move.add(channel_dict[channel_name])
         
-        if not channels_to_move:
+        if not groups_to_move:
             return self.selected_channels
         
         all_groups = sorted(set(channel_dict[list(channel_dict.keys())[0]] for channel_dict in self.selected_channels))
         
         if direction == "up":
-            for channel_name, current_group in channels_to_move:
-                current_group_idx = all_groups.index(current_group)
+            min_group = min(groups_to_move)
+            current_group_idx = all_groups.index(min_group)
+            
+            if current_group_idx == 0:
+                new_group = max(all_groups) + 1
+                for channel_dict in self.selected_channels:
+                    channel_name = list(channel_dict.keys())[0]
+                    if channel_dict[channel_name] in groups_to_move:
+                        channel_dict[channel_name] = new_group
                 
-                if current_group_idx == 0:
-                    new_group = max(all_groups) + 1
-                    for channel_dict in self.selected_channels:
-                        if list(channel_dict.keys())[0] == channel_name:
-                            channel_dict[channel_name] = new_group
-                    
-                    for channel_dict in self.selected_channels:
-                        ch_name = list(channel_dict.keys())[0]
-                        if ch_name != channel_name:
-                            channel_dict[ch_name] = max(1, channel_dict[ch_name] - 1)
-                else:
-                    target_group = all_groups[current_group_idx - 1]
-                    new_group = target_group
-                    
-                    for channel_dict in self.selected_channels:
-                        if list(channel_dict.keys())[0] == channel_name:
-                            channel_dict[channel_name] = new_group
-                    
-                    for channel_dict in self.selected_channels:
-                        ch_name = list(channel_dict.keys())[0]
-                        if ch_name != channel_name:
-                            current_ch_group = channel_dict[ch_name]
-                            if current_ch_group == target_group:
-                                channel_dict[ch_name] = current_ch_group + 1
+                for channel_dict in self.selected_channels:
+                    channel_name = list(channel_dict.keys())[0]
+                    if channel_dict[channel_name] not in groups_to_move:
+                        channel_dict[channel_name] = max(1, channel_dict[channel_name] - 1)
+            else:
+                target_group = all_groups[current_group_idx - 1]
+                
+                channels_to_target = []
+                channels_to_original = []
+                
+                for channel_dict in self.selected_channels:
+                    channel_name = list(channel_dict.keys())[0]
+                    if channel_dict[channel_name] in groups_to_move:
+                        channels_to_target.append(channel_name)
+                    elif channel_dict[channel_name] == target_group:
+                        channels_to_original.append(channel_name)
+                
+                for channel_dict in self.selected_channels:
+                    channel_name = list(channel_dict.keys())[0]
+                    if channel_dict[channel_name] in groups_to_move:
+                        channel_dict[channel_name] = target_group
+                
+                for channel_dict in self.selected_channels:
+                    channel_name = list(channel_dict.keys())[0]
+                    if channel_dict[channel_name] == target_group and channel_name not in channels_to_target:
+                        channel_dict[channel_name] = min_group
         
         else:
-            for channel_name, current_group in channels_to_move:
-                current_group_idx = all_groups.index(current_group)
+            max_group = max(groups_to_move)
+            current_group_idx = all_groups.index(max_group)
+            
+            if current_group_idx == len(all_groups) - 1:
+                for channel_dict in self.selected_channels:
+                    channel_name = list(channel_dict.keys())[0]
+                    if channel_dict[channel_name] in groups_to_move:
+                        channel_dict[channel_name] = 1
                 
-                if current_group_idx == len(all_groups) - 1:
-                    new_group = 1
-                    for channel_dict in self.selected_channels:
-                        if list(channel_dict.keys())[0] == channel_name:
-                            channel_dict[channel_name] = new_group
-                    
-                    for channel_dict in self.selected_channels:
-                        ch_name = list(channel_dict.keys())[0]
-                        if ch_name != channel_name:
-                            channel_dict[ch_name] = channel_dict[ch_name] + 1
-                else:
-                    target_group = all_groups[current_group_idx + 1]
-                    new_group = target_group
-                    
-                    for channel_dict in self.selected_channels:
-                        if list(channel_dict.keys())[0] == channel_name:
-                            channel_dict[channel_name] = new_group
-                    
-                    for channel_dict in self.selected_channels:
-                        ch_name = list(channel_dict.keys())[0]
-                        if ch_name != channel_name:
-                            current_ch_group = channel_dict[ch_name]
-                            if current_ch_group == target_group:
-                                channel_dict[ch_name] = max(1, current_ch_group - 1)
+                for channel_dict in self.selected_channels:
+                    channel_name = list(channel_dict.keys())[0]
+                    if channel_dict[channel_name] not in groups_to_move:
+                        channel_dict[channel_name] = channel_dict[channel_name] + 1
+            else:
+                target_group = all_groups[current_group_idx + 1]
+                
+                channels_to_target = []
+                channels_to_original = []
+                
+                for channel_dict in self.selected_channels:
+                    channel_name = list(channel_dict.keys())[0]
+                    if channel_dict[channel_name] in groups_to_move:
+                        channels_to_target.append(channel_name)
+                    elif channel_dict[channel_name] == target_group:
+                        channels_to_original.append(channel_name)
+                
+                for channel_dict in self.selected_channels:
+                    channel_name = list(channel_dict.keys())[0]
+                    if channel_dict[channel_name] in groups_to_move:
+                        channel_dict[channel_name] = target_group
+
+                for channel_dict in self.selected_channels:
+                    channel_name = list(channel_dict.keys())[0]
+                    if channel_dict[channel_name] == target_group and channel_name not in channels_to_target:
+                        channel_dict[channel_name] = max_group
 
         self.selected_channels.sort(key=lambda x: list(x.values())[0])
         
