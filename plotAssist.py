@@ -14,7 +14,7 @@ COLORS = {
     "yellow": "#FFFF00",
 }
 
-class DataHandler(): # TODO: add move, and remove methods
+class DataHandler(): # TODO: add move method
     def __init__(self, available_channels: list[str]) -> None:
         self.available_channels = sorted(available_channels)
         self.selected_channels: list[dict[str, int]] = []
@@ -76,6 +76,24 @@ class DataHandler(): # TODO: add move, and remove methods
             channel_name = list(channel_dict.keys())[0]
             if channel_name in channels:
                 channel_dict[channel_name] = self.get_next_group()
+        
+        return self.reorder_groups()
+    
+    def remove_channels(self, channels: list[str]) -> list[dict[str, int]]:
+        self.selected_channels = [
+            channel_dict for channel_dict in self.selected_channels
+            if list(channel_dict.keys())[0] not in channels
+        ]
+        
+        return self.reorder_groups()
+    
+    def remove_all_channels(self, listbox) -> list[dict[str, int]]:
+        visible_items = listbox.get(0, tk.END)
+        
+        self.selected_channels = [
+            channel_dict for channel_dict in self.selected_channels
+            if list(channel_dict.keys())[0] not in visible_items
+        ]
         
         return self.reorder_groups()
 
