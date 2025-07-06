@@ -14,7 +14,7 @@ COLORS = {
     "yellow": "#FFFF00",
 }
 
-class DataHandler():
+class DataHandler(): # TODO: add combine, split, move, and remove methods
     def __init__(self, available_channels: list[str]) -> None:
         self.available_channels = sorted(available_channels)
         self.selected_channels: list[dict[str, int]] = []
@@ -25,7 +25,7 @@ class DataHandler():
         self.current_group += 1
         return current
 
-    def select_channel(self, channels: list[str], keep_group = False) -> list[dict[str, int]]:
+    def select_channels(self, channels: list[str], keep_group = False) -> list[dict[str, int]]:
         new_channels: list[dict[str, int]] = []
         if not keep_group:
             for channel in channels:
@@ -40,7 +40,7 @@ class DataHandler():
         self.selected_channels.extend(new_channels)
         return new_channels
     
-    def select_all(self, listbox: tk.Listbox, keep_group = False) -> list[dict[str, int]]:
+    def select_all_channels(self, listbox: tk.Listbox, keep_group = False) -> list[dict[str, int]]:
         new_channels: list[dict[str, int]] = []
         if not keep_group:
             for channel in list(listbox.get(0, tk.END)):
@@ -54,6 +54,9 @@ class DataHandler():
         new_channels = sorted(new_channels, key=lambda x: list(x.keys())[0])
         self.selected_channels.extend(new_channels)
         return new_channels
+    
+    def combine_channels(self):
+        pass
         
 class HighlightCreator:
     def __init__(self, df: pd.DataFrame, parent_frame):
