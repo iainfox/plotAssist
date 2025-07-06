@@ -1,3 +1,4 @@
+import time
 import pandas as pd
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -567,6 +568,7 @@ class Plotter(tk.Tk):
                         ax.axvspan(start, self.data_handler.index[-1], color=color, alpha=0.5)
 
     def _on_click(self, event):
+        start = int(time.time() * 1000)
         if getattr(getattr(event.canvas, "toolbar", None), "mode", None):
             return
         if not getattr(self, '_axes', None):
@@ -597,8 +599,9 @@ class Plotter(tk.Tk):
                         min_dist = dist
                         closest_info = (line, x_val, y_val, idx[i], label)
             if closest_info:
+                end = int(time.time() * 1000)
                 line, x_val, y_val, idx_val, col_name = closest_info
-                print(f"\nLeft click closest point: {idx_val}\nData: {col_name}: {y_val}")
+                print(f"\n({end-start}) Left click closest point: {idx_val}\nData: {col_name}: {y_val}")
                 old_xlim, old_ylim = clicked_ax.get_xlim(), clicked_ax.get_ylim()
                 clicked_ax.plot(x_val, y_val, marker='o', markersize=4,
                                 markerfacecolor=line.get_color(), markeredgecolor='black',
@@ -661,6 +664,7 @@ class Plotter(tk.Tk):
                         )
                         ax.set_xlim(old_xlim)
                         ax.set_ylim(old_ylim)
+            print(f"({int(time.time() * 1000)-start})")
         if self._fig is not None:
             self._fig.canvas.draw_idle()
 
