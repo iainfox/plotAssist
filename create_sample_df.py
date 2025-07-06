@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-n_points = 100
+n_points = 10000
 time_seconds = np.linspace(0, 100, n_points)
 
 # Create base signals
