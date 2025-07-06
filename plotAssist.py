@@ -614,10 +614,11 @@ class Plotter(tk.Tk):
                         closest_info = (line, x_val, y_val, idx[i], label)
             if closest_info is not None:
                 line, x_val, y_val, idx_val, col_name = closest_info
+                print()
                 print(f"Left click closest point: {idx_val}")
-                print(f"Subplot: {list(self._axes).index(clicked_ax) + 1}")
-                print(f"Closest line: {col_name}")
                 print(f"Data: {col_name}: {y_val}")
+                old_xlim = clicked_ax.get_xlim()
+                old_ylim = clicked_ax.get_ylim()
                 marker = clicked_ax.plot(x_val, y_val, marker='o', markersize=4,
                                          markerfacecolor=line.get_color(), markeredgecolor='black',
                                          markeredgewidth=1, linestyle='None', zorder=5, label='_nolegend_')[0]
@@ -631,7 +632,9 @@ class Plotter(tk.Tk):
                     color='black',
                     fontsize=8
                 )
-        elif event.button == 3:
+                clicked_ax.set_xlim(old_xlim)
+                clicked_ax.set_ylim(old_ylim)
+        elif event.button == 3 and clicked_ax is not None:
             if isinstance(idx, pd.DatetimeIndex):
                 x_datetime = mdates.num2date(x_click)
                 try:
@@ -661,8 +664,11 @@ class Plotter(tk.Tk):
                 closest_idx = np.argmin(time_diffs)
                 closest_time = idx[closest_idx]
             data_at_time = df.loc[closest_time]
+            print()
             print(f"Right click at time: {closest_time}")
             print("Data at this time:")
+            for col in df.columns:
+                print(f"{col}: {data_at_time[col]}")
             for ax in self._axes:
                 for line in ax.get_lines():
                     if line.get_label() in df.columns:
@@ -672,6 +678,8 @@ class Plotter(tk.Tk):
                             x_plot = float(mdates.date2num(closest_time))
                         else:
                             x_plot = float(np.asarray(closest_time))
+                        old_xlim = ax.get_xlim()
+                        old_ylim = ax.get_ylim()
                         ax.plot(x_plot, value, marker='o', markersize=4,
                                 markerfacecolor=line.get_color(), markeredgecolor='black', markeredgewidth=1,
                                 linestyle='None', zorder=5, label='_nolegend_')
@@ -685,6 +693,8 @@ class Plotter(tk.Tk):
                             color='black',
                             fontsize=8
                         )
+                        ax.set_xlim(old_xlim)
+                        ax.set_ylim(old_ylim)
         if self._fig is not None:
             self._fig.canvas.draw_idle()
 
