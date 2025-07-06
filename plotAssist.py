@@ -1,4 +1,3 @@
-from copy import copy
 import pandas as pd
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -15,11 +14,20 @@ COLORS = {
 }
 
 class DataHandler():
-    def __init__(self, available_channels: list[str]) -> None:
-        self.available_channels = sorted(available_channels)
+    def __init__(self, df: pd.DataFrame) -> None:
+        self.df = df
+        self.available_channels = sorted(df.columns)
         self.selected_channels: list[dict[str, int]] = []
         self.current_group = 1
+        self.index = df.index
     
+    def get_index(self):
+        return self.index
+
+    def get_channel_data(self, channel: str):
+        if channel in self.df.columns:
+            return self.df[channel]
+
     def get_next_group(self):
         self.current_group += 1
         return self.current_group -1
@@ -173,8 +181,8 @@ class DataHandler():
         return self.reorder_groups()
 
 class HighlightCreator:
-    def __init__(self, df: pd.DataFrame, parent_frame):
-        self.df = df
+    def __init__(self, data_handler: DataHandler, parent_frame):
+        self.data_handler = data_handler
         self.parent_frame = parent_frame
         self.highlight_configs = []
     
@@ -190,7 +198,7 @@ class HighlightCreator:
 
         highlight_channel_var = tk.StringVar(value="None")
         highlight_channel_dropdown = ttk.Combobox(
-            top_row, textvariable=highlight_channel_var, state="readonly", width=25, values=["None"] + sorted(self.df.columns)
+            top_row, textvariable=highlight_channel_var, state="readonly", width=25, values=["None"] + sorted(self.data_handler.available_channels)
         )
         highlight_channel_dropdown.pack(side=tk.LEFT, padx=(8, 0))
 
@@ -207,9 +215,9 @@ class HighlightCreator:
                 current_values = ["None"]
                 
                 if new_text == "":
-                    current_values.extend(sorted(self.df.columns))
+                    current_values.extend(sorted(self.data_handler.available_channels))
                 else:
-                    for col in self.df.columns:
+                    for col in self.data_handler.available_channels:
                         if new_text.lower() in col.lower():
                             current_values.append(col)
                 
@@ -252,7 +260,8 @@ class HighlightCreator:
 class Plotter(tk.Tk):
     def __init__(self, df: pd.DataFrame, title: str):
         super().__init__()
-        self.df = df
+        #self.df = df
+        self.data_handler = DataHandler(df)
         self.titleText = title
 
         self.title(title)
@@ -276,7 +285,7 @@ class Plotter(tk.Tk):
                 self.listbox.delete(0, tk.END)
                 print("Entry changed:", new_text)
 
-                for col in self.df.columns:
+                for col in self.data_handler.available_channels:
                     if new_text.lower() in col.lower():
                         self.listbox.insert(tk.END, col)
                 self._last_filter_text = new_text
@@ -291,7 +300,7 @@ class Plotter(tk.Tk):
         self.listbox = tk.Listbox(left_frame, selectmode=tk.EXTENDED, activestyle='none')
         self.listbox.pack(fill=tk.BOTH, expand=True)
         
-        self.listbox.insert(tk.END, *sorted(self.df.columns))
+        self.listbox.insert(tk.END, *sorted(self.data_handler.available_channels))
 
         right_frame = tk.Frame(self, width=300)
         right_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10, anchor='n')
@@ -327,8 +336,9 @@ class Plotter(tk.Tk):
         settings_frame = tk.Frame(self, width=350)
         settings_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10, anchor='n')
         settings_frame.pack_propagate(False)
+        
         # Create initial highlight area
-        self.hc = HighlightCreator(df, settings_frame)
+        self.hc = HighlightCreator(self.data_handler, settings_frame)
         self.hc.create_highlight_section()
 
         add_highlight_button = tk.Button(settings_frame, text="+", width=2, height=1, 
@@ -342,13 +352,17 @@ class Plotter(tk.Tk):
         plot_btn.pack(side=tk.LEFT, fill=tk.X, expand=True)
     
     def plot(self):
-        if not hasattr(self, "selected_items_meta") or not self.selected_items_meta:
+        if not self.data_handler.selected_channels:
             return
 
-        from collections import defaultdict
-        groups = defaultdict(list)
-        for item in self.selected_items_meta:
-            groups[item['group']].append(item['name'])
+        # Group channels by their group number
+        groups = {}
+        for channel_dict in self.data_handler.selected_channels:
+            channel_name = list(channel_dict.keys())[0]
+            group_num = channel_dict[channel_name]
+            if group_num not in groups:
+                groups[group_num] = []
+            groups[group_num].append(channel_name)
 
         sorted_groups = sorted(groups.items(), key=lambda x: x[0])
 
@@ -360,9 +374,9 @@ class Plotter(tk.Tk):
         for ax_idx, (group_num, channel_names) in enumerate(sorted_groups):
             ax = axes[ax_idx]
             for channel in channel_names:
-                if channel not in self.df.columns:
+                if channel not in self.data_handler.available_channels:
                     continue
-                ax.plot(self.df.index, self.df[channel], label=channel, linewidth=2)
+                ax.plot(self.data_handler.get_index(), self.data_handler.get_channel_data(channel), label=channel, linewidth=2)
 
             ax.grid(True, which='both', linestyle='--', alpha=0.6)
             ax.set_ylabel(f"Group {group_num}")
@@ -370,13 +384,13 @@ class Plotter(tk.Tk):
             if ax_idx != 0:
                 ax.spines['top'].set_visible(False)
 
-            self.highlight(ax, self.df[channel])
+            self.highlight(ax)
 
         axes[-1].set_xlabel("Index")
         fig.suptitle(self.titleText)
         plt.show()
 
-    def highlight(self, ax, data):
+    def highlight(self, ax):
         highlight_configs = self.hc.get_highlight_configs()
         
         for config in highlight_configs:
@@ -389,10 +403,13 @@ class Plotter(tk.Tk):
                 continue
                 
             channel_name = highlight_channel_var.get()
-            if channel_name not in self.df.columns:
+            if channel_name not in self.data_handler.available_channels:
                 continue
                 
-            channel_data = self.df[channel_name]
+            channel_data = self.data_handler.get_channel_data(channel_name)
+
+            if channel_data is None:
+                continue
             
             filter_modes = ["==", ">=", "<=", ">", "<", "isin"]
             if filter_mode_var.get() not in filter_modes:
@@ -415,12 +432,12 @@ class Plotter(tk.Tk):
                     for i, v in enumerate(channel_data):
                         if v == val and not highlighting:
                             highlighting = True
-                            start = self.df.index[i]
+                            start = self.data_handler.index[i]
                         elif v != val and highlighting:
                             highlighting = False
-                            ax.axvspan(start, self.df.index[i], color=color, alpha=0.5)
+                            ax.axvspan(start, self.data_handler.index[i], color=color, alpha=0.5)
                     if highlighting and start is not None:
-                        ax.axvspan(start, self.df.index[-1], color=color, alpha=0.5)
+                        ax.axvspan(start, self.data_handler.index[-1], color=color, alpha=0.5)
                 case ">=": 
                     try:
                         val = float(value_var.get())
@@ -431,12 +448,12 @@ class Plotter(tk.Tk):
                     for i, v in enumerate(channel_data):
                         if v >= val and not highlighting:
                             highlighting = True
-                            start = self.df.index[i]
+                            start = self.data_handler.index[i]
                         elif v < val and highlighting:
                             highlighting = False
-                            ax.axvspan(start, self.df.index[i], color=color, alpha=0.5)
+                            ax.axvspan(start, self.data_handler.index[i], color=color, alpha=0.5)
                     if highlighting and start is not None:
-                        ax.axvspan(start, self.df.index[-1], color=color, alpha=0.5)
+                        ax.axvspan(start, self.data_handler.index[-1], color=color, alpha=0.5)
                 case "<=":
                     try:
                         val = float(value_var.get())
@@ -447,12 +464,12 @@ class Plotter(tk.Tk):
                     for i, v in enumerate(channel_data):
                         if v <= val and not highlighting:
                             highlighting = True
-                            start = self.df.index[i]
+                            start = self.data_handler.index[i]
                         elif v > val and highlighting:
                             highlighting = False
-                            ax.axvspan(start, self.df.index[i], color=color, alpha=0.5)
+                            ax.axvspan(start, self.data_handler.index[i], color=color, alpha=0.5)
                     if highlighting and start is not None:
-                        ax.axvspan(start, self.df.index[-1], color=color, alpha=0.5)
+                        ax.axvspan(start, self.data_handler.index[-1], color=color, alpha=0.5)
                 case ">":
                     try:
                         val = float(value_var.get())
@@ -463,12 +480,12 @@ class Plotter(tk.Tk):
                     for i, v in enumerate(channel_data):
                         if v > val and not highlighting:
                             highlighting = True
-                            start = self.df.index[i]
+                            start = self.data_handler.index[i]
                         elif v <= val and highlighting:
                             highlighting = False
-                            ax.axvspan(start, self.df.index[i], color=color, alpha=0.5)
+                            ax.axvspan(start, self.data_handler.index[i], color=color, alpha=0.5)
                     if highlighting and start is not None:
-                        ax.axvspan(start, self.df.index[-1], color=color, alpha=0.5)
+                        ax.axvspan(start, self.data_handler.index[-1], color=color, alpha=0.5)
                 case "<":
                     try:
                         val = float(value_var.get())
@@ -479,12 +496,12 @@ class Plotter(tk.Tk):
                     for i, v in enumerate(channel_data):
                         if v < val and not highlighting:
                             highlighting = True
-                            start = self.df.index[i]
+                            start = self.data_handler.index[i]
                         elif v >= val and highlighting:
                             highlighting = False
-                            ax.axvspan(start, self.df.index[i], color=color, alpha=0.5)
+                            ax.axvspan(start, self.data_handler.index[i], color=color, alpha=0.5)
                     if highlighting and start is not None:
-                        ax.axvspan(start, self.df.index[-1], color=color, alpha=0.5)
+                        ax.axvspan(start, self.data_handler.index[-1], color=color, alpha=0.5)
                 case "isin":
                     val_str = value_var.get()
                     vals = val_str.split(",")
@@ -493,139 +510,117 @@ class Plotter(tk.Tk):
                     for i, v in enumerate(channel_data):
                         if str(v) in vals and not highlighting:
                             highlighting = True
-                            start = self.df.index[i]
+                            start = self.data_handler.index[i]
                         elif str(v) not in vals and highlighting:
                             highlighting = False
-                            ax.axvspan(start, self.df.index[i], color=color, alpha=0.5)
+                            ax.axvspan(start, self.data_handler.index[i], color=color, alpha=0.5)
                     if highlighting and start is not None:
-                        ax.axvspan(start, self.df.index[-1], color=color, alpha=0.5)
+                        ax.axvspan(start, self.data_handler.index[-1], color=color, alpha=0.5)
 
     def buttonClick(self, index):
-        if not hasattr(self, "selected_items_meta"):
-            self.selected_items_meta = []
-
-        def sync_listbox_with_meta():
-            self.selected_listbox.delete(0, tk.END)
-            for item in self.selected_items_meta:
-                self.selected_listbox.insert(tk.END, f"{item['name']} [{item['group']}]")
-
-        def get_visible_left_items():
-            return [self.listbox.get(i) for i in range(self.listbox.size())]
-
-        def get_selected_items(listbox):
-            return [listbox.get(i) for i in listbox.curselection()]
-
-        def get_next_group_number():
-            if not self.selected_items_meta:
-                return 1
-            return max(item['group'] for item in self.selected_items_meta) + 1
-
-        def normalize_groups():
-            if not self.selected_items_meta:
-                return
-
-            unique_groups = sorted(set(item['group'] for item in self.selected_items_meta))
-            group_mapping = {old_group: new_group for new_group, old_group in enumerate(unique_groups, 1)}
-
-            for item in self.selected_items_meta:
-                item['group'] = group_mapping[item['group']]
-
         match index:
             case 0:  # ">>"
-                visible = get_visible_left_items()
-                if visible:
-                    group_num = get_next_group_number()
-                    for i, item in enumerate(visible):
-                        self.selected_items_meta.append({'name': item, 'group': group_num + i})
-                    sync_listbox_with_meta()
+                channels = [self.listbox.get(i) for i in range(self.listbox.size())]
+                if channels:
+                    self.data_handler.select_channels(channels, keep_group=False)
+                    self.update_selected_listbox()
 
             case 1:  # "[>>]"
-                visible = get_visible_left_items()
-                if visible:
-                    group_num = get_next_group_number()
-                    for item in visible:
-                        self.selected_items_meta.append({'name': item, 'group': group_num})
-                    sync_listbox_with_meta()
+                channels = [self.listbox.get(i) for i in range(self.listbox.size())]
+                if channels:
+                    self.data_handler.select_channels(channels, keep_group=True)
+                    self.update_selected_listbox()
 
             case 2:  # ">"
-                selected = get_selected_items(self.listbox)
-                if selected:
-                    group_num = get_next_group_number()
-                    for i, item in enumerate(selected):
-                        self.selected_items_meta.append({'name': item, 'group': group_num + i})
-                    sync_listbox_with_meta()
+                selected_indices = [i for i in self.listbox.curselection()]
+                if selected_indices:
+                    channels = [self.listbox.get(i) for i in selected_indices]
+                    self.data_handler.select_channels(channels, keep_group=False)
+                    self.update_selected_listbox()
 
             case 3:  # "[>]"
-                selected = get_selected_items(self.listbox)
-                if selected:
-                    group_num = get_next_group_number()
-                    for item in selected:
-                        self.selected_items_meta.append({'name': item, 'group': group_num})
-                    sync_listbox_with_meta()
+                selected_indices = [i for i in self.listbox.curselection()]
+                if selected_indices:
+                    channels = [self.listbox.get(i) for i in selected_indices]
+                    self.data_handler.select_channels(channels, keep_group=True)
+                    self.update_selected_listbox()
 
             case 4: # "[<>]"
-                sel = get_selected_items(self.selected_listbox)
-                if not sel:
+                selected_indices = [i for i in self.selected_listbox.curselection()]
+                if not selected_indices:
                     return
-                    
-                group_num = get_next_group_number()
-                for i in reversed(sel):
-                    item = self.selected_items_meta[i]
-                    del self.selected_items_meta[i]
-                    self.selected_items_meta.append({'name': item['name'], 'group': group_num})
-                    group_num += 1
-                normalize_groups()
-                sync_listbox_with_meta()
+                
+                channels = []
+                for i in selected_indices:
+                    channel_name = list(self.data_handler.selected_channels[i].keys())[0]
+                    channels.append(channel_name)
+                
+                self.data_handler.split_channels(channels)
+                self.update_selected_listbox()
 
             case 5: # "[><]"
-                sel = get_selected_items(self.selected_listbox)
-                if not sel:
+                selected_indices = [i for i in self.selected_listbox.curselection()]
+                if not selected_indices:
                     return
-                    
-                group_num = get_next_group_number()
-                for i in sel:
-                    self.selected_items_meta[i]['group'] = group_num
-                normalize_groups()
-                sync_listbox_with_meta()
+                
+                channels = []
+                for i in selected_indices:
+                    channel_name = list(self.data_handler.selected_channels[i].keys())[0]
+                    channels.append(channel_name)
+                
+                self.data_handler.combine_channels(channels)
+                self.update_selected_listbox()
             
             case 6:  # "↑"
-                sel = get_selected_items(self.selected_listbox)
-                if not sel:
+                selected_indices = [i for i in self.selected_listbox.curselection()]
+                if not selected_indices:
                     return
-                for i in sel:
-                    if i == 0:
-                        continue
-                    self.selected_items_meta[i-1], self.selected_items_meta[i] = self.selected_items_meta[i], self.selected_items_meta[i-1]
-                sync_listbox_with_meta()
-                for i in [s-1 for s in sel if s > 0]:
-                    self.selected_listbox.selection_set(i)
+                
+                channels = []
+                for i in selected_indices:
+                    channel_name = list(self.data_handler.selected_channels[i].keys())[0]
+                    channels.append(channel_name)
+                
+                self.data_handler.move(channels, "up")
+                self.update_selected_listbox()
 
             case 7:  # "↓"
-                sel = get_selected_items(self.selected_listbox)
-                if not sel:
+                selected_indices = [i for i in self.selected_listbox.curselection()]
+                if not selected_indices:
                     return
-                for i in reversed(sel):
-                    if i == len(self.selected_items_meta) - 1:
-                        continue
-                    self.selected_items_meta[i], self.selected_items_meta[i+1] = self.selected_items_meta[i+1], self.selected_items_meta[i]
-                sync_listbox_with_meta()
-                for i in [s+1 for s in sel if s < len(self.selected_items_meta)-1]:
-                    self.selected_listbox.selection_set(i)
+                
+                channels = []
+                for i in selected_indices:
+                    channel_name = list(self.data_handler.selected_channels[i].keys())[0]
+                    channels.append(channel_name)
+                
+                self.data_handler.move(channels, "down")
+                self.update_selected_listbox()
 
             case 8:  # "<"
-                sel = get_selected_items(self.selected_listbox)
-                if sel:
-                    for i in reversed(sel):
-                        del self.selected_items_meta[i]
-                    normalize_groups()
-                    sync_listbox_with_meta()
+                selected_indices = [i for i in self.selected_listbox.curselection()]
+                if selected_indices:
+                    channels = []
+                    for i in selected_indices:
+                        channel_name = list(self.data_handler.selected_channels[i].keys())[0]
+                        channels.append(channel_name)
+                    
+                    self.data_handler.remove_channels(channels)
+                    self.update_selected_listbox()
 
             case 9:  # "<<"
-                self.selected_items_meta.clear()
-                sync_listbox_with_meta()
+                self.data_handler.remove_all_channels(self.selected_listbox)
+                self.update_selected_listbox()
+                
             case _:
                 print(f"Unknown button index: {index}")
 
+    def update_selected_listbox(self):
+        self.selected_listbox.delete(0, tk.END)
+        for channel_dict in self.data_handler.selected_channels:
+            channel_name = list(channel_dict.keys())[0]
+            group = channel_dict[channel_name]
+            self.selected_listbox.insert(tk.END, f"{channel_name} [{group}]")
 def plot_assist_df(df, title):
     app = Plotter(df, title)
     app.mainloop()
