@@ -586,6 +586,9 @@ class Plotter(tk.Tk):
         if not lines:
             return
 
+        saved_xlims = [ax.get_xlim() for ax in self._axes]
+        saved_ylims = [ax.get_ylim() for ax in self._axes]
+
         idx = self.data_handler.index
         x_click, y_click = event.x, event.y
         xlim = clicked_ax.get_xlim()
@@ -704,6 +707,10 @@ class Plotter(tk.Tk):
                         )
             
             print(f"({int(time.time() * 1000)-start})")
+        
+        for i, ax in enumerate(self._axes):
+            ax.set_xlim(saved_xlims[i])
+            ax.set_ylim(saved_ylims[i])
         
         if self._fig is not None:
             self._fig.canvas.draw_idle()
