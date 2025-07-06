@@ -585,12 +585,30 @@ class Plotter(tk.Tk):
         if isinstance(idx, pd.DatetimeIndex):
             # Convert xdata (matplotlib float) to datetime
             x_datetime = mdates.num2date(x_pos)
-            time_diffs = np.abs(idx - pd.Timestamp(x_datetime))
+            try:
+                idx_values = idx.values
+                x_ts = pd.Timestamp(x_datetime)
+                if x_ts is pd.NaT:
+                    raise ValueError("x_datetime could not be converted to a valid Timestamp")
+                x_dt64 = x_ts.to_datetime64()
+                time_diffs = np.abs(idx_values - x_dt64)
+            except Exception:
+                try:
+                    x_ts = pd.Timestamp(x_datetime)
+                    time_diffs = np.abs(idx - x_ts)
+                except Exception:
+                    idx_float = np.array([d.timestamp() for d in idx])
+                    x_float = x_datetime.timestamp()
+                    time_diffs = np.abs(idx_float - x_float)
             closest_idx = np.argmin(time_diffs)
             closest_time = idx[closest_idx]
         else:
-            # Numeric index
-            time_diffs = np.abs(idx - x_pos)
+            try:
+                idx_arr = np.asarray(idx)
+                time_diffs = np.abs(idx_arr - x_pos)
+            except Exception:
+                idx_arr = np.array(list(idx))
+                time_diffs = np.abs(idx_arr - x_pos)
             closest_idx = np.argmin(time_diffs)
             closest_time = idx[closest_idx]
 
