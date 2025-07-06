@@ -567,62 +567,53 @@ class Plotter(tk.Tk):
                         ax.axvspan(start, self.data_handler.index[-1], color=color, alpha=0.5)
 
     def _on_click(self, event):
-        if hasattr(event.canvas, "toolbar") and getattr(event.canvas.toolbar, "mode", None):
+        if getattr(getattr(event.canvas, "toolbar", None), "mode", None):
+            return
+        if not getattr(self, '_axes', None):
             return
 
-        if not hasattr(self, '_axes') or len(self._axes) == 0:
-            return
-
-        clicked_ax = None
-        for ax in self._axes:
-            if event.inaxes == ax:
-                clicked_ax = ax
-                break
-
-        if event.xdata is None or event.ydata is None:
+        clicked_ax = next((ax for ax in self._axes if event.inaxes == ax), None)
+        if event.xdata is None or event.ydata is None or clicked_ax is None:
             return
 
         df = self.data_handler.df
-        x_click = event.xdata
-        y_click = event.ydata
         idx = self.data_handler.index
+        x_click, y_click = event.xdata, event.ydata
 
-        if event.button == 1 and clicked_ax is not None:
+        def norm(val, lim):
+            return (val - lim[0]) / (lim[1] - lim[0]) if lim[1] != lim[0] else 0.5
+
+        if event.button == 1:
             min_dist = float('inf')
             closest_info = None
-            xlim = clicked_ax.get_xlim()
-            ylim = clicked_ax.get_ylim()
-            def norm(val, lim):
-                return (val - lim[0]) / (lim[1] - lim[0]) if lim[1] != lim[0] else 0.5
-            x_click_norm = norm(x_click, xlim)
-            y_click_norm = norm(y_click, ylim)
+            xlim, ylim = clicked_ax.get_xlim(), clicked_ax.get_ylim()
+            x_click_norm, y_click_norm = norm(x_click, xlim), norm(y_click, ylim)
             for line in clicked_ax.get_lines():
                 label = line.get_label()
                 if label not in df.columns:
                     continue
                 ydata = df[label].values
-                if isinstance(idx, pd.DatetimeIndex):
-                    xdata = mdates.date2num(idx)
-                else:
-                    xdata = np.asarray(idx)
-                for i, (x_val, y_val) in enumerate(zip(xdata, ydata)):
-                    x_val_norm = norm(x_val, xlim)
-                    y_val_norm = norm(y_val, ylim)
-                    dist = np.hypot(x_val_norm - x_click_norm, y_val_norm - y_click_norm)
+                xdata = mdates.date2num(idx) if isinstance(idx, pd.DatetimeIndex) else np.asarray(idx)
+                x_range = xlim[1] - xlim[0]
+                margin = 0.05 * x_range
+                mask = (xdata >= x_click - margin) & (xdata <= x_click + margin)
+                indices = np.where(mask)[0] if isinstance(xdata, np.ndarray) else range(len(xdata))
+                if not len(indices):
+                    indices = range(len(xdata))
+                for i in indices:
+                    x_val, y_val = xdata[i], ydata[i]
+                    dist = np.hypot(norm(x_val, xlim) - x_click_norm, norm(y_val, ylim) - y_click_norm)
                     if dist < min_dist:
                         min_dist = dist
                         closest_info = (line, x_val, y_val, idx[i], label)
-            if closest_info is not None:
+            if closest_info:
                 line, x_val, y_val, idx_val, col_name = closest_info
-                print()
-                print(f"Left click closest point: {idx_val}")
-                print(f"Data: {col_name}: {y_val}")
-                old_xlim = clicked_ax.get_xlim()
-                old_ylim = clicked_ax.get_ylim()
-                marker = clicked_ax.plot(x_val, y_val, marker='o', markersize=4,
-                                         markerfacecolor=line.get_color(), markeredgecolor='black',
-                                         markeredgewidth=1, linestyle='None', zorder=5, label='_nolegend_')[0]
-                annotation = clicked_ax.annotate(
+                print(f"\nLeft click closest point: {idx_val}\nData: {col_name}: {y_val}")
+                old_xlim, old_ylim = clicked_ax.get_xlim(), clicked_ax.get_ylim()
+                clicked_ax.plot(x_val, y_val, marker='o', markersize=4,
+                                markerfacecolor=line.get_color(), markeredgecolor='black',
+                                markeredgewidth=1, linestyle='None', zorder=5, label='_nolegend_')
+                clicked_ax.annotate(
                     f"{col_name}: {y_val:.2f}",
                     xy=(x_val, y_val),
                     xytext=(0, 10),
@@ -634,6 +625,7 @@ class Plotter(tk.Tk):
                 )
                 clicked_ax.set_xlim(old_xlim)
                 clicked_ax.set_ylim(old_ylim)
+
         elif event.button == 3 and clicked_ax is not None:
             if isinstance(idx, pd.DatetimeIndex):
                 x_datetime = mdates.num2date(x_click)
