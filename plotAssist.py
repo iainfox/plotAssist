@@ -96,11 +96,19 @@ class DataHandler():
         return self.reorder_groups()
     
     def remove_all_channels(self, listbox) -> list[dict[str, int]]:
-        visible_items = listbox.get(0, tk.END)
+        visible_items = list(listbox.get(0, tk.END))
+        channels_to_remove = []
         
+        for item in visible_items:
+            if ' [' in item:
+                channel_name = item.split(' [')[0]
+                channels_to_remove.append(channel_name)
+            else:
+                channels_to_remove.append(item)
+
         self.selected_channels = [
             channel_dict for channel_dict in self.selected_channels
-            if list(channel_dict.keys())[0] not in visible_items
+            if list(channel_dict.keys())[0] not in channels_to_remove
         ]
         
         return self.reorder_groups()
