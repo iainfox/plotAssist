@@ -40,19 +40,8 @@ class DataHandler(): # TODO: add move, and remove methods
         return new_channels
     
     def select_all_channels(self, listbox: tk.Listbox, keep_group = False) -> list[dict[str, int]]:
-        new_channels: list[dict[str, int]] = []
-        if not keep_group:
-            for channel in list(listbox.get(0, tk.END)):
-                group = self.get_next_group()
-                new_channels.append({channel: group})
-        else:
-            group = self.get_next_group()
-            for channel in list(listbox.get(0, tk.END)):
-                new_channels.append({channel: group})
-
-        new_channels = sorted(new_channels, key=lambda x: list(x.keys())[0])
-        self.selected_channels.extend(new_channels)
-        return new_channels
+        channels = list(listbox.get(0, tk.END))
+        return self.select_channels(channels, keep_group)
     
     def combine_channels(self, channels: list[str]) -> list[dict[str, int]]:
         base_group = None
