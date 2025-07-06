@@ -2,6 +2,8 @@ import pandas as pd
 import tkinter as tk
 import tkinter.ttk as ttk
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import numpy as np
 
 COLORS = {
     "red": "#FF0000",
@@ -206,6 +208,7 @@ class DataHandler():
         self.selected_channels.sort(key=lambda x: list(x.values())[0])
         
         return self.reorder_groups()
+
 class HighlightCreator:
     def __init__(self, data_handler: DataHandler, parent_frame):
         self.data_handler = data_handler
@@ -289,6 +292,8 @@ class Plotter(tk.Tk):
         #self.df = df
         self.data_handler = DataHandler(df)
         self.titleText = title
+        self._axes = []
+        self._fig = None
 
         self.title(title)
         self.geometry("1050x400")
@@ -381,7 +386,6 @@ class Plotter(tk.Tk):
         if not self.data_handler.selected_channels:
             return
 
-        # Group channels by their group number
         groups = {}
         for channel_dict in self.data_handler.selected_channels:
             channel_name = list(channel_dict.keys())[0]
@@ -396,6 +400,10 @@ class Plotter(tk.Tk):
         fig, axes = plt.subplots(n_groups, 1, sharex=True, sharey=False, figsize=(8, 2.5 * n_groups), constrained_layout=True)
         if n_groups == 1:
             axes = [axes]
+        else:
+            axes = list(axes)
+        self._axes = axes
+        self._fig = fig
 
         for ax_idx, (group_num, channel_names) in enumerate(sorted_groups):
             ax = axes[ax_idx]
@@ -414,6 +422,9 @@ class Plotter(tk.Tk):
 
         axes[-1].set_xlabel("Index")
         fig.suptitle(self.titleText)
+        fig.canvas.mpl_connect('button_press_event', self._on_click)
+        if self._fig is not None:
+            self._fig.canvas.draw_idle()
         plt.show()
 
     def highlight(self, ax):
@@ -543,6 +554,84 @@ class Plotter(tk.Tk):
                     if highlighting and start is not None:
                         ax.axvspan(start, self.data_handler.index[-1], color=color, alpha=0.5)
 
+    def _on_click(self, event):
+        if not hasattr(self, '_axes') or len(self._axes) == 0:
+            return
+
+        clicked_ax = None
+        for ax in self._axes:
+            if event.inaxes == ax:
+                clicked_ax = ax
+                break
+
+        if event.xdata is None or event.ydata is None:
+            return
+
+        df = self.data_handler.df
+
+        x_pos = event.xdata
+        x_timestamp = pd.Timestamp(x_pos, unit='D')
+        time_diffs = np.abs(df.index - x_timestamp)
+        closest_idx = np.argmin(time_diffs)
+        closest_time = df.index[closest_idx]
+
+        if event.button == 1 and clicked_ax is not None:
+            y_pos = event.ydata
+            closest_line = None
+            min_distance = float('inf')
+            for line in clicked_ax.get_lines():
+                if line.get_label() in df.columns:
+                    y_value = df.loc[closest_time, line.get_label()]
+                    distance = abs(y_value - y_pos)
+                    if distance < min_distance:
+                        min_distance = distance
+                        closest_line = line
+            if closest_line:
+                column = closest_line.get_label()
+                value = df.loc[closest_time, column]
+                print(f"Left click at time: {closest_time}")
+                print(f"Subplot: {list(self._axes).index(clicked_ax) + 1}")
+                print(f"Closest line: {column}")
+                print(f"Data: {column}: {value}")
+                clicked_ax.plot(float(mdates.date2num(closest_time)), value, marker='o', markersize=4,
+                                markerfacecolor=closest_line.get_color(), markeredgecolor='black',
+                                markeredgewidth=1, linestyle='None', zorder=5, label='_nolegend_')
+                clicked_ax.annotate(
+                    f"{column}: {value:.2f}",
+                    xy=(float(mdates.date2num(closest_time)), value),
+                    xytext=(0, 10),
+                    textcoords='offset points',
+                    ha='center',
+                    va='bottom',
+                    color='black',
+                    fontsize=8
+                )
+        elif event.button == 3:
+            data_at_time = df.loc[closest_time]
+            print(f"Right click at time: {closest_time}")
+            print("Data at this time:")
+            for ax in self._axes:
+                for line in ax.get_lines():
+                    if line.get_label() in df.columns:
+                        column = line.get_label()
+                        value = data_at_time[column]
+                        print(f"  {column}: {value}")
+                        ax.plot(float(mdates.date2num(closest_time)), value, marker='o', markersize=4,
+                                markerfacecolor=line.get_color(), markeredgecolor='black', markeredgewidth=1,
+                                linestyle='None', zorder=5, label='_nolegend_')
+                        ax.annotate(
+                            f"{column}: {value:.2f}",
+                            xy=(float(mdates.date2num(closest_time)), value),
+                            xytext=(0, 10),
+                            textcoords='offset points',
+                            ha='center',
+                            va='bottom',
+                            color='black',
+                            fontsize=8
+                        )
+        if self._fig is not None:
+            self._fig.canvas.draw_idle()
+
     def buttonClick(self, index):
         match index:
             case 0:  # ">>"
@@ -647,6 +736,7 @@ class Plotter(tk.Tk):
             channel_name = list(channel_dict.keys())[0]
             group = channel_dict[channel_name]
             self.selected_listbox.insert(tk.END, f"{channel_name} [{group}]")
+
 def plot_assist_df(df, title):
     app = Plotter(df, title)
     app.mainloop()
