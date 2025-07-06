@@ -14,32 +14,6 @@ COLORS = {
     "yellow": "#FFFF00",
 }
 
-"""
-case 0:  # ">>"
-    visible = get_visible_left_items()
-    if visible:
-        group_num = get_next_group_number()
-        for i, item in enumerate(visible):
-            self.selected_items_meta.append({'name': item, 'group': group_num + i})
-        sync_listbox_with_meta()
-
-case 1:  # "[>>]"
-    visible = get_visible_left_items()
-    if visible:
-        group_num = get_next_group_number()
-        for item in visible:
-            self.selected_items_meta.append({'name': item, 'group': group_num})
-        sync_listbox_with_meta()
-
-case 3:  # "[>]"
-    selected = get_selected_items(self.listbox)
-    if selected:
-        group_num = get_next_group_number()
-        for item in selected:
-            self.selected_items_meta.append({'name': item, 'group': group_num})
-        sync_listbox_with_meta()
-"""
-
 class DataHandler():
     def __init__(self, available_channels: list[str]) -> None:
         self.available_channels = sorted(available_channels)
@@ -53,7 +27,7 @@ class DataHandler():
 
     def select_channel(self, channels: list[str], keep_group = False) -> list[dict[str, int]]:
         new_channels: list[dict[str, int]] = []
-        if keep_group:
+        if not keep_group:
             for channel in channels:
                 group = self.get_next_group()
                 new_channels.append({channel: group})
@@ -65,6 +39,22 @@ class DataHandler():
         new_channels = sorted(new_channels, key=lambda x: list(x.keys())[0])
         self.selected_channels.extend(new_channels)
         return new_channels
+    
+    def select_all(self, listbox: tk.Listbox, keep_group = False) -> list[dict[str, int]]:
+        new_channels: list[dict[str, int]] = []
+        if not keep_group:
+            for channel in list(listbox.get(0, tk.END)):
+                group = self.get_next_group()
+                new_channels.append({channel: group})
+        else:
+            group = self.get_next_group()
+            for channel in list(listbox.get(0, tk.END)):
+                new_channels.append({channel: group})
+
+        new_channels = sorted(new_channels, key=lambda x: list(x.keys())[0])
+        self.selected_channels.extend(new_channels)
+        return new_channels
+        
 class HighlightCreator:
     def __init__(self, df: pd.DataFrame, parent_frame):
         self.df = df
