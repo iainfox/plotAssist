@@ -949,11 +949,22 @@ class Plotter(tk.Tk):
         for channel_name in self.data_handler.available_channels:
             self.listbox.insert(tk.END, f"{channel_name}")
 
-def plot_assist_df(df, title):
-    app = Plotter(df, title)
-    app.mainloop()
-
+def plot_assist_df(df: pd.DataFrame, title: str, autoDict: dict[str, str] = None):
+    if autoDict:
+        app = Plotter(df, title)
+        group_to_channels = {}
+        for channel_name, group in autoDict.items():
+            group_to_channels.setdefault(group, []).append(channel_name)
+        for group, channels in group_to_channels.items():
+            app.data_handler.select_channels(channels, keep_group=True)
+        group_names = list(group_to_channels.keys())
+        app.plot(group_names)
+    else:
+        app = Plotter(df, title)
+        app.mainloop()
 if __name__ == "__main__":
+    # exmaple autodict:
+    # {"cosine": "grouped", "sine": "grouped", "linear": "not grouped"}
     df = pd.read_csv('example_dataframe_time.csv', index_col=0)
     df.index = pd.to_datetime(df.index)
     plot_assist_df(df, "Plot Assist")
