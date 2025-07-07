@@ -326,7 +326,6 @@ class Plotter(tk.Tk):
 
             if new_text != self._last_filter_text:
                 self.listbox.delete(0, tk.END)
-                print("Entry changed:", new_text)
 
                 for col in self.data_handler.available_channels:
                     if new_text.lower() in col.lower():
