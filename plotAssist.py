@@ -16,6 +16,20 @@ COLORS = {
     "yellow": "#FFFF00",
 }
 
+def set_entry_placeholder(entry: tk.Entry, placeholder: str, color="gray", normal_color="black"):
+    def on_focus_in(event):
+        if entry.get() == placeholder:
+            entry.delete(0, tk.END)
+            entry.config(foreground=normal_color)
+    def on_focus_out(event):
+        if entry.get() == "":
+            entry.insert(0, placeholder)
+            entry.config(foreground=color)
+    entry.insert(0, placeholder)
+    entry.config(foreground=color)
+    entry.bind("<FocusIn>", on_focus_in)
+    entry.bind("<FocusOut>", on_focus_out)
+
 class DataHandler():
     def __init__(self, df: pd.DataFrame) -> None:
         # Data validation
@@ -242,7 +256,7 @@ class SettingsManager:
         highlight_channel_dropdown.pack(side=tk.LEFT, padx=(8, 0))
 
         highlight_filter_entry = tk.Entry(top_row)
-        highlight_filter_entry.insert(0, "Search channels...")
+        set_entry_placeholder(highlight_filter_entry, "Search channels...")
         highlight_filter_entry.pack(side=tk.LEFT, padx=(8, 0), fill=tk.X, expand=True)
 
         _last_highlight_filter_text = ""
@@ -252,7 +266,7 @@ class SettingsManager:
 
             if new_text != _last_highlight_filter_text:
                 current_values = ["None"]
-                if new_text == "":
+                if new_text == "" or new_text == "Search channels...":
                     current_values.extend(sorted(self.data_handler.available_channels))
                 else:
                     for col in self.data_handler.available_channels:
@@ -300,7 +314,7 @@ class SettingsManager:
         custom_channel_label.pack(side=tk.LEFT)
 
         shared_filter_entry = tk.Entry(top_row)
-        shared_filter_entry.insert(0, "Search channels...")
+        set_entry_placeholder(shared_filter_entry, "Search channels...")
         shared_filter_entry.pack(side=tk.RIGHT, padx=(8, 0), fill=tk.X, expand=True)
 
         selector_row = tk.Frame(custom_channel_frame)
@@ -311,24 +325,29 @@ class SettingsManager:
             selector_row, textvariable=base_channel_var, state="readonly", width=18, values=["None"] + sorted(self.data_handler.available_channels)
         )
         base_channel_dropdown.pack(side=tk.LEFT, padx=(0, 8))
+        base_channel_dropdown.set("Base channel...")
 
         operand_var = tk.StringVar(value="+")
         operand_dropdown = ttk.Combobox(
             selector_row, textvariable=operand_var, state="readonly", width=4, values=["+", "-", "*", "/"]
         )
         operand_dropdown.pack(side=tk.LEFT, padx=(0, 8))
+        operand_dropdown.set("Op")
 
         modifier_channel_var = tk.StringVar(value="None")
         modifier_channel_dropdown = ttk.Combobox(
             selector_row, textvariable=modifier_channel_var, state="readonly", width=18, values=["None"] + sorted(self.data_handler.available_channels)
         )
         modifier_channel_dropdown.pack(side=tk.LEFT, padx=(0, 8))
+        modifier_channel_dropdown.set("Modifier channel...")
 
         _last_shared_filter_text = ""
 
         def on_shared_filter_entry_change(event):
             nonlocal _last_shared_filter_text
             new_text = shared_filter_entry.get().strip()
+            if new_text == "Search channels...":
+                new_text = ""
             if new_text != _last_shared_filter_text:
                 current_values = ["None"]
                 if new_text == "":
@@ -351,6 +370,7 @@ class SettingsManager:
 
         name_var = tk.StringVar()
         name_entry = tk.Entry(bottom_row, textvariable=name_var, width=24)
+        set_entry_placeholder(name_entry, "Custom channel name...")
         name_entry.pack(side=tk.LEFT, padx=(0, 8))
 
         def create_custom_channel():
@@ -358,8 +378,10 @@ class SettingsManager:
             modifier = modifier_channel_var.get()
             operand = operand_var.get()
             custom_name = name_var.get().strip()
+            if custom_name == "Custom channel name...":
+                custom_name = ""
 
-            if base == "None" or modifier == "None":
+            if base == "None" or modifier == "None" or base == "Base channel..." or modifier == "Modifier channel...":
                 print("Error", "Please select both a base and a modifier channel.")
                 return
 
@@ -412,7 +434,6 @@ class SettingsManager:
         create_button.pack(side=tk.LEFT, padx=(8, 0))
 
         return custom_channel_frame
-
     def get_highlight_configs(self):
         return self.highlight_configs
 
@@ -436,6 +457,7 @@ class Plotter(tk.Tk):
         filter_label_frame.pack(fill=tk.X, pady=(0, 2))
 
         self.filter_entry = tk.Entry(filter_label_frame)
+        set_entry_placeholder(self.filter_entry, "Search channels...")
         self.filter_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
 
         self._last_filter_text = ""
