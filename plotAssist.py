@@ -379,13 +379,10 @@ class Plotter(tk.Tk):
         settings_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10, anchor='n')
         settings_frame.pack_propagate(False)
         
-        # Create initial highlight area
+        # Create initial 2 highlight areas
         self.hc = HighlightCreator(self.data_handler, settings_frame)
         self.hc.create_highlight_section()
-
-        add_highlight_button = tk.Button(settings_frame, text="+", width=2, height=1, 
-                                       command=lambda: self.hc.create_highlight_section())
-        add_highlight_button.pack(side=tk.BOTTOM, anchor='sw', padx=5, pady=5)
+        self.hc.create_highlight_section()
 
         plot_btn_frame = tk.Frame(right_frame)
         plot_btn_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=(3, 1))
