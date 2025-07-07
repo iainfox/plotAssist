@@ -23,6 +23,7 @@ class DataHandler():
         if not (isinstance(idx, pd.DatetimeIndex) or pd.api.types.is_integer_dtype(idx) or pd.api.types.is_float_dtype(idx)):
             raise ValueError("DataFrame index must be DatetimeIndex or numeric.")
         for col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
             if not pd.api.types.is_numeric_dtype(df[col]):
                 raise ValueError(f"Column '{col}' must be numeric for plotting/highlighting.")
         self.df = df
@@ -30,7 +31,7 @@ class DataHandler():
         self.selected_channels: list[dict[str, int]] = []
         self.current_group = 1
         self.index = df.index
-    
+
     def get_index(self):
         return self.index
 
@@ -56,23 +57,23 @@ class DataHandler():
         new_channels = sorted(new_channels, key=lambda x: list(x.keys())[0])
         self.selected_channels.extend(new_channels)
         return new_channels
-    
+
     def select_all_channels(self, listbox: tk.Listbox, keep_group = False) -> list[dict[str, int]]:
         if not isinstance(listbox, tk.Listbox):
             raise TypeError("Expected a tk.Listbox instance.")
         channels = list(listbox.get(0, tk.END))
         return self.select_channels(channels, keep_group)
-    
+
     def reorder_groups(self) -> list[dict[str, int]]:
         unique_groups = sorted(set(channel_dict[list(channel_dict.keys())[0]] for channel_dict in self.selected_channels))
         group_mapping = {old_group: new_group for new_group, old_group in enumerate(unique_groups, 1)}
-        
+
         for channel_dict in self.selected_channels:
             channel_name = list(channel_dict.keys())[0]
             channel_dict[channel_name] = group_mapping[channel_dict[channel_name]]
-        
+
         return self.selected_channels
-    
+
     def combine_channels(self, channels: list[str]) -> list[dict[str, int]]:
         base_group = None
         for channel_dict in self.selected_channels:
@@ -80,33 +81,33 @@ class DataHandler():
             if channel_name in channels:
                 base_group = channel_dict[channel_name]
                 break
-        
+
         if base_group is None:
             return self.selected_channels
-        
+
         for channel_dict in self.selected_channels:
             channel_name = list(channel_dict.keys())[0]
             if channel_name in channels:
                 channel_dict[channel_name] = base_group
-        
+
         return self.reorder_groups()
-    
+
     def split_channels(self, channels: list[str]) -> list[dict[str, int]]:
         for channel_dict in self.selected_channels:
             channel_name = list(channel_dict.keys())[0]
             if channel_name in channels:
                 channel_dict[channel_name] = self.get_next_group()
-        
+
         return self.reorder_groups()
-    
+
     def remove_channels(self, channels: list[str]) -> list[dict[str, int]]:
         self.selected_channels = [
             channel_dict for channel_dict in self.selected_channels
             if list(channel_dict.keys())[0] not in channels
         ]
-        
+
         return self.reorder_groups()
-    
+
     def remove_all_channels(self, listbox) -> list[dict[str, int]]:
         if not isinstance(listbox, tk.Listbox):
             raise TypeError("Expected a tk.Listbox instance.")
@@ -123,87 +124,87 @@ class DataHandler():
             if list(channel_dict.keys())[0] not in channels_to_remove
         ]
         return self.reorder_groups()
-    
+
     def move(self, channels: list[str], direction: str) -> list[dict[str, int]]:
         if direction not in ["up", "down"]:
             return self.selected_channels
-        
+
         groups_to_move = set()
         for channel_dict in self.selected_channels:
             channel_name = list(channel_dict.keys())[0]
             if channel_name in channels:
                 groups_to_move.add(channel_dict[channel_name])
-        
+
         if not groups_to_move:
             return self.selected_channels
-        
+
         all_groups = sorted(set(channel_dict[list(channel_dict.keys())[0]] for channel_dict in self.selected_channels))
-        
+
         if direction == "up":
             min_group = min(groups_to_move)
             current_group_idx = all_groups.index(min_group)
-            
+
             if current_group_idx == 0:
                 new_group = max(all_groups) + 1
                 for channel_dict in self.selected_channels:
                     channel_name = list(channel_dict.keys())[0]
                     if channel_dict[channel_name] in groups_to_move:
                         channel_dict[channel_name] = new_group
-                
+
                 for channel_dict in self.selected_channels:
                     channel_name = list(channel_dict.keys())[0]
                     if channel_dict[channel_name] not in groups_to_move:
                         channel_dict[channel_name] = max(1, channel_dict[channel_name] - 1)
             else:
                 target_group = all_groups[current_group_idx - 1]
-                
+
                 channels_to_target = []
                 channels_to_original = []
-                
+
                 for channel_dict in self.selected_channels:
                     channel_name = list(channel_dict.keys())[0]
                     if channel_dict[channel_name] in groups_to_move:
                         channels_to_target.append(channel_name)
                     elif channel_dict[channel_name] == target_group:
                         channels_to_original.append(channel_name)
-                
+
                 for channel_dict in self.selected_channels:
                     channel_name = list(channel_dict.keys())[0]
                     if channel_dict[channel_name] in groups_to_move:
                         channel_dict[channel_name] = target_group
-                
+
                 for channel_dict in self.selected_channels:
                     channel_name = list(channel_dict.keys())[0]
                     if channel_dict[channel_name] == target_group and channel_name not in channels_to_target:
                         channel_dict[channel_name] = min_group
-        
+
         else:
             max_group = max(groups_to_move)
             current_group_idx = all_groups.index(max_group)
-            
+
             if current_group_idx == len(all_groups) - 1:
                 for channel_dict in self.selected_channels:
                     channel_name = list(channel_dict.keys())[0]
                     if channel_dict[channel_name] in groups_to_move:
                         channel_dict[channel_name] = 1
-                
+
                 for channel_dict in self.selected_channels:
                     channel_name = list(channel_dict.keys())[0]
                     if channel_dict[channel_name] not in groups_to_move:
                         channel_dict[channel_name] = channel_dict[channel_name] + 1
             else:
                 target_group = all_groups[current_group_idx + 1]
-                
+
                 channels_to_target = []
                 channels_to_original = []
-                
+
                 for channel_dict in self.selected_channels:
                     channel_name = list(channel_dict.keys())[0]
                     if channel_dict[channel_name] in groups_to_move:
                         channels_to_target.append(channel_name)
                     elif channel_dict[channel_name] == target_group:
                         channels_to_original.append(channel_name)
-                
+
                 for channel_dict in self.selected_channels:
                     channel_name = list(channel_dict.keys())[0]
                     if channel_dict[channel_name] in groups_to_move:
@@ -215,7 +216,7 @@ class DataHandler():
                         channel_dict[channel_name] = max_group
 
         self.selected_channels.sort(key=lambda x: list(x.values())[0])
-        
+
         return self.reorder_groups()
 
 class SettingsManager:
