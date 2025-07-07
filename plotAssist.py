@@ -508,7 +508,7 @@ class Plotter(tk.Tk):
         plot_btn = tk.Button(plot_btn_frame, text="Plot", command=self.plot)
         plot_btn.pack(side=tk.LEFT, fill=tk.X, expand=True)
     
-    def plot(self):
+    def plot(self, group_titles=None):
         if not self.data_handler.selected_channels:
             return
 
@@ -539,7 +539,15 @@ class Plotter(tk.Tk):
                 ax.plot(self.data_handler.get_index(), self.data_handler.get_channel_data(channel), label=channel, linewidth=2)
 
             ax.grid(True, which='both', linestyle='--', alpha=0.6)
-            ax.set_ylabel(f"Group {group_num}")
+
+            if group_titles is not None and isinstance(group_titles, list) and ax_idx < len(group_titles):
+                group_title = group_titles[ax_idx]
+                if not group_title:
+                    group_title = f"Group {group_num}"
+            else:
+                group_title = f"Group {group_num}"
+
+            ax.set_ylabel(group_title)
             ax.legend(loc='upper right', fontsize=8)
             ax.spines['top'].set_visible(True)
             ax.spines['bottom'].set_visible(True)
