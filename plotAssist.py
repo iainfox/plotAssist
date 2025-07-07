@@ -278,13 +278,6 @@ class SettingsManager:
         color_dropdown = ttk.Combobox(filter_row, textvariable=color_var, values=list(COLORS.keys()), state="readonly", width=8)
         color_dropdown.pack(side=tk.LEFT, padx=(6, 0))
 
-        def remove_highlight():
-            highlight_frame.destroy()
-            self.highlight_configs[:] = [cfg for cfg in self.highlight_configs if cfg['highlight_frame'] != highlight_frame]
-        remove_btn = tk.Button(filter_row, text="Remove", command=remove_highlight, width=7)
-        remove_btn.pack(side=tk.LEFT, padx=(8, 0))
-        
-        # Store the configuration for this highlight section
         highlight_config = {
             'highlight_channel_var': highlight_channel_var,
             'filter_mode_var': filter_mode_var,
@@ -294,6 +287,62 @@ class SettingsManager:
         }
         self.highlight_configs.append(highlight_config)
         return highlight_frame
+
+    def create_custom_channel_section(self):
+        custom_channel_frame = tk.Frame(self.parent_frame, bd=1, relief="flat", highlightbackground="black", highlightcolor="black", highlightthickness=1)
+        custom_channel_frame.pack(fill=tk.BOTH, expand=True)
+
+        top_row = tk.Frame(custom_channel_frame)
+        top_row.pack(anchor='nw', pady=(8, 4), padx=8, fill=tk.X)
+
+        custom_channel_label = tk.Label(top_row, text="Custom Channel", font=("Arial", 10, "bold"))
+        custom_channel_label.pack(side=tk.LEFT)
+
+        cutsom_channel_channel_var = tk.StringVar(value="None")
+        cutsom_channel_channel_dropdown = ttk.Combobox(
+            top_row, textvariable=cutsom_channel_channel_var, state="readonly", width=25, values=["None"] + sorted(self.data_handler.available_channels)
+        )
+        cutsom_channel_channel_dropdown.pack(side=tk.LEFT, padx=(8, 0))
+
+        cutsom_channel_filter_entry = tk.Entry(top_row)
+        cutsom_channel_filter_entry.insert(0, "Search channels...")
+        cutsom_channel_filter_entry.pack(side=tk.LEFT, padx=(8, 0), fill=tk.X, expand=True)
+
+        _last_cutsom_channel_filter_text = ""
+        def on_channel_filter_entry_change(event):
+            nonlocal _last_cutsom_channel_filter_text
+            new_text = cutsom_channel_filter_entry.get().strip()
+
+            if new_text != _last_highlight_filter_text:
+                current_values = ["None"]
+                if new_text == "":
+                    current_values.extend(sorted(self.data_handler.available_channels))
+                else:
+                    for col in self.data_handler.available_channels:
+                        if new_text.lower() in col.lower():
+                            current_values.append(col)
+                cutsom_channel_channel_dropdown['values'] = current_values
+                _last_highlight_filter_text = new_text
+
+        cutsom_channel_filter_entry.bind("<KeyRelease>", on_channel_filter_entry_change)
+
+        filter_row = tk.Frame(custom_channel_frame)
+        filter_row.pack(anchor='nw', pady=(8, 4), padx=8, fill=tk.X)
+
+        filter_modes = ["==", ">=", "<=", ">", "<", "isin"]
+        filter_mode_var = tk.StringVar(value="==")
+        filter_mode_dropdown = ttk.Combobox(filter_row, textvariable=filter_mode_var, values=filter_modes, state="readonly", width=4)
+        filter_mode_dropdown.pack(side=tk.LEFT)
+
+        value_var = tk.StringVar(value="1")
+        value_entry = tk.Entry(filter_row, textvariable=value_var, width=10)
+        value_entry.pack(side=tk.LEFT, padx=(6, 0))
+
+        color_var = tk.StringVar(value="red")
+        color_dropdown = ttk.Combobox(filter_row, textvariable=color_var, values=list(COLORS.keys()), state="readonly", width=8)
+        color_dropdown.pack(side=tk.LEFT, padx=(6, 0))
+        
+        return custom_channel_frame
         
     def get_highlight_configs(self):
         return self.highlight_configs
@@ -383,6 +432,7 @@ class Plotter(tk.Tk):
         self.hc = SettingsManager(self.data_handler, settings_frame)
         self.hc.create_highlight_section()
         self.hc.create_highlight_section()
+        self.hc.create_custom_channel_section()
 
         plot_btn_frame = tk.Frame(right_frame)
         plot_btn_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=(3, 1))
