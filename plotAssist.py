@@ -218,7 +218,7 @@ class DataHandler():
         
         return self.reorder_groups()
 
-class HighlightCreator:
+class SettingsManager:
     def __init__(self, data_handler: DataHandler, parent_frame):
         self.data_handler = data_handler
         self.parent_frame = parent_frame
@@ -380,7 +380,7 @@ class Plotter(tk.Tk):
         settings_frame.pack_propagate(False)
         
         # Create initial 2 highlight areas
-        self.hc = HighlightCreator(self.data_handler, settings_frame)
+        self.hc = SettingsManager(self.data_handler, settings_frame)
         self.hc.create_highlight_section()
         self.hc.create_highlight_section()
 
