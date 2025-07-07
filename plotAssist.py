@@ -869,6 +869,11 @@ class Plotter(tk.Tk):
             group = channel_dict[channel_name]
             self.selected_listbox.insert(tk.END, f"{channel_name} [{group}]")
 
+    def update_available_listbox(self):
+        self.listbox.delete(0, tk.END)
+        for channel_name in self.data_handler.available_channels:
+            self.listbox.insert(tk.END, f"{channel_name}")
+
 def plot_assist_df(df, title):
     app = Plotter(df, title)
     app.mainloop()
