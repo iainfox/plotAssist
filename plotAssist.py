@@ -289,7 +289,7 @@ class SettingsManager:
         self.highlight_configs.append(highlight_config)
         return highlight_frame
 
-    def create_custom_channel_section(self):
+    def create_custom_channel_section(self, update_callback: callable, update_callback2: callable):
         custom_channel_frame = tk.Frame(self.parent_frame, bd=1, relief="flat", highlightbackground="black", highlightcolor="black", highlightthickness=1)
         custom_channel_frame.pack(fill=tk.BOTH, expand=True)
 
@@ -299,22 +299,37 @@ class SettingsManager:
         custom_channel_label = tk.Label(top_row, text="Custom Channel", font=("Arial", 10, "bold"))
         custom_channel_label.pack(side=tk.LEFT)
 
-        cutsom_channel_channel_var = tk.StringVar(value="None")
-        cutsom_channel_channel_dropdown = ttk.Combobox(
-            top_row, textvariable=cutsom_channel_channel_var, state="readonly", width=25, values=["None"] + sorted(self.data_handler.available_channels)
+        shared_filter_entry = tk.Entry(top_row)
+        shared_filter_entry.insert(0, "Search channels...")
+        shared_filter_entry.pack(side=tk.RIGHT, padx=(8, 0), fill=tk.X, expand=True)
+
+        selector_row = tk.Frame(custom_channel_frame)
+        selector_row.pack(anchor='nw', pady=(4, 4), padx=8, fill=tk.X)
+
+        base_channel_var = tk.StringVar(value="None")
+        base_channel_dropdown = ttk.Combobox(
+            selector_row, textvariable=base_channel_var, state="readonly", width=18, values=["None"] + sorted(self.data_handler.available_channels)
         )
-        cutsom_channel_channel_dropdown.pack(side=tk.LEFT, padx=(8, 0))
+        base_channel_dropdown.pack(side=tk.LEFT, padx=(0, 8))
 
-        cutsom_channel_filter_entry = tk.Entry(top_row)
-        cutsom_channel_filter_entry.insert(0, "Search channels...")
-        cutsom_channel_filter_entry.pack(side=tk.LEFT, padx=(8, 0), fill=tk.X, expand=True)
+        operand_var = tk.StringVar(value="+")
+        operand_dropdown = ttk.Combobox(
+            selector_row, textvariable=operand_var, state="readonly", width=4, values=["+", "-", "*", "/"]
+        )
+        operand_dropdown.pack(side=tk.LEFT, padx=(0, 8))
 
-        _last_cutsom_channel_filter_text = ""
-        def on_channel_filter_entry_change(event):
-            nonlocal _last_cutsom_channel_filter_text
-            new_text = cutsom_channel_filter_entry.get().strip()
+        modifier_channel_var = tk.StringVar(value="None")
+        modifier_channel_dropdown = ttk.Combobox(
+            selector_row, textvariable=modifier_channel_var, state="readonly", width=18, values=["None"] + sorted(self.data_handler.available_channels)
+        )
+        modifier_channel_dropdown.pack(side=tk.LEFT, padx=(0, 8))
 
-            if new_text != _last_highlight_filter_text:
+        _last_shared_filter_text = ""
+
+        def on_shared_filter_entry_change(event):
+            nonlocal _last_shared_filter_text
+            new_text = shared_filter_entry.get().strip()
+            if new_text != _last_shared_filter_text:
                 current_values = ["None"]
                 if new_text == "":
                     current_values.extend(sorted(self.data_handler.available_channels))
@@ -322,29 +337,82 @@ class SettingsManager:
                     for col in self.data_handler.available_channels:
                         if new_text.lower() in col.lower():
                             current_values.append(col)
-                cutsom_channel_channel_dropdown['values'] = current_values
-                _last_highlight_filter_text = new_text
+                base_channel_dropdown['values'] = current_values
+                modifier_channel_dropdown['values'] = current_values
+                _last_shared_filter_text = new_text
 
-        cutsom_channel_filter_entry.bind("<KeyRelease>", on_channel_filter_entry_change)
+        shared_filter_entry.bind("<KeyRelease>", on_shared_filter_entry_change)
 
-        filter_row = tk.Frame(custom_channel_frame)
-        filter_row.pack(anchor='nw', pady=(8, 4), padx=8, fill=tk.X)
+        bottom_row = tk.Frame(custom_channel_frame)
+        bottom_row.pack(anchor='w', pady=(8, 4), padx=8, fill=tk.X)
 
-        filter_modes = ["==", ">=", "<=", ">", "<", "isin"]
-        filter_mode_var = tk.StringVar(value="==")
-        filter_mode_dropdown = ttk.Combobox(filter_row, textvariable=filter_mode_var, values=filter_modes, state="readonly", width=4)
-        filter_mode_dropdown.pack(side=tk.LEFT)
+        name_label = tk.Label(bottom_row, text="Name:")
+        name_label.pack(side=tk.LEFT, padx=(0, 4))
 
-        value_var = tk.StringVar(value="1")
-        value_entry = tk.Entry(filter_row, textvariable=value_var, width=10)
-        value_entry.pack(side=tk.LEFT, padx=(6, 0))
+        name_var = tk.StringVar()
+        name_entry = tk.Entry(bottom_row, textvariable=name_var, width=24)
+        name_entry.pack(side=tk.LEFT, padx=(0, 8))
 
-        color_var = tk.StringVar(value="red")
-        color_dropdown = ttk.Combobox(filter_row, textvariable=color_var, values=list(COLORS.keys()), state="readonly", width=8)
-        color_dropdown.pack(side=tk.LEFT, padx=(6, 0))
-        
+        def create_custom_channel():
+            base = base_channel_var.get()
+            modifier = modifier_channel_var.get()
+            operand = operand_var.get()
+            custom_name = name_var.get().strip()
+
+            if base == "None" or modifier == "None":
+                print("Error", "Please select both a base and a modifier channel.")
+                return
+
+            base_data = self.data_handler.get_channel_data(base)
+            modifier_data = self.data_handler.get_channel_data(modifier)
+            if base_data is None or modifier_data is None:
+                print("Error", "Invalid channel selection.")
+                return
+
+            try:
+                if operand == "+":
+                    new_data = base_data + modifier_data
+                elif operand == "-":
+                    new_data = base_data - modifier_data
+                elif operand == "*":
+                    new_data = base_data * modifier_data
+                elif operand == "/":
+                    new_data = base_data / modifier_data
+                else:
+                    print("Error", "Invalid operand.")
+                    return
+            except Exception as e:
+                print("Error", f"Failed to create custom channel: {e}")
+                return
+
+            custom_names = [col for col in self.data_handler.df.columns if col.startswith("custom_")]
+            n_custom = len(custom_names)
+
+            if custom_name == "":
+                new_name = f"custom_{n_custom+1}"
+            else:
+                new_name = custom_name
+
+            if new_name in self.data_handler.df.columns:
+                print("Error", f"Channel '{new_name}' already exists.")
+                return
+
+            self.data_handler.df[new_name] = new_data
+            self.data_handler.available_channels = sorted(self.data_handler.df.columns)
+            self.data_handler.select_channels([new_name])
+            update_callback()
+            update_callback2()
+
+            base_channel_dropdown['values'] = ["None"] + sorted(self.data_handler.available_channels)
+            modifier_channel_dropdown['values'] = ["None"] + sorted(self.data_handler.available_channels)
+
+            print("Success", f"Custom channel '{new_name}' created and added.")
+
+        create_button = tk.Button(bottom_row, text="Create Custom Channel", command=create_custom_channel)
+        create_button.pack(side=tk.LEFT, padx=(8, 0))
+
         return custom_channel_frame
-        
+
     def get_highlight_configs(self):
         return self.highlight_configs
 
@@ -428,12 +496,11 @@ class Plotter(tk.Tk):
         settings_frame = tk.Frame(self, width=350)
         settings_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10, anchor='n')
         settings_frame.pack_propagate(False)
-        
-        # Create initial 2 highlight areas
+
         self.hc = SettingsManager(self.data_handler, settings_frame)
         self.hc.create_highlight_section()
         self.hc.create_highlight_section()
-        self.hc.create_custom_channel_section()
+        self.hc.create_custom_channel_section(self.update_selected_listbox, self.update_available_listbox)
 
         plot_btn_frame = tk.Frame(right_frame)
         plot_btn_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=(3, 1))
