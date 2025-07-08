@@ -728,6 +728,21 @@ class Plotter(tk.Tk):
         if event.xdata is None or event.ydata is None or clicked_ax is None:
             return
 
+        if event.x < 100:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                ymin = tk.simpledialog.askfloat("Y-axis Limit", "Enter new Y min:")
+                ymax = tk.simpledialog.askfloat("Y-axis Limit", "Enter new Y max:")
+                if ymin is not None and ymax is not None:
+                    clicked_ax.set_ylim(ymin, ymax)
+                    if self._fig is not None:
+                        self._fig.canvas.draw_idle()
+            except Exception as e:
+                print("Invalid input:", e)
+            root.destroy()
+            return
+
         lines = clicked_ax.get_lines()
         if not lines:
             return
