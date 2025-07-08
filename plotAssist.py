@@ -426,6 +426,7 @@ class SettingsManager:
                 print("Error", f"Channel '{new_name}' already exists.")
                 return
 
+            new_data = pd.Series(new_data, index=self.data_handler.df.index)
             self.data_handler.df[new_name] = new_data
             self.data_handler.available_channels = sorted(self.data_handler.df.columns)
             self.data_handler.select_channels([new_name])
