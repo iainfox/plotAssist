@@ -304,7 +304,10 @@ class SettingsManager:
         return highlight_frame
 
     def create_custom_channel_section(self, update_callback: callable, update_callback2: callable):
-        custom_channel_frame = tk.Frame(self.parent_frame, bd=1, relief="flat", highlightbackground="black", highlightcolor="black", highlightthickness=1)
+        custom_channel_frame = tk.Frame(
+            self.parent_frame, bd=1, relief="flat",
+            highlightbackground="black", highlightcolor="black", highlightthickness=1
+        )
         custom_channel_frame.pack(fill=tk.BOTH, expand=True)
 
         top_row = tk.Frame(custom_channel_frame)
@@ -322,21 +325,24 @@ class SettingsManager:
 
         base_channel_var = tk.StringVar(value="None")
         base_channel_dropdown = ttk.Combobox(
-            selector_row, textvariable=base_channel_var, state="readonly", width=18, values=["None"] + sorted(self.data_handler.available_channels)
+            selector_row, textvariable=base_channel_var, state="readonly", width=18,
+            values=["None"] + sorted(self.data_handler.available_channels)
         )
         base_channel_dropdown.pack(side=tk.LEFT, padx=(0, 8))
         base_channel_dropdown.set("Base channel...")
 
         operand_var = tk.StringVar(value="+")
         operand_dropdown = ttk.Combobox(
-            selector_row, textvariable=operand_var, state="readonly", width=4, values=["+", "-", "*", "/"]
+            selector_row, textvariable=operand_var, state="readonly", width=4,
+            values=["+", "-", "*", "/"]
         )
         operand_dropdown.pack(side=tk.LEFT, padx=(0, 8))
         operand_dropdown.set("Op")
 
         modifier_channel_var = tk.StringVar(value="None")
         modifier_channel_dropdown = ttk.Combobox(
-            selector_row, textvariable=modifier_channel_var, state="readonly", width=18, values=["None"] + sorted(self.data_handler.available_channels)
+            selector_row, textvariable=modifier_channel_var, state="readonly", width=18,
+            values=["None"] + sorted(self.data_handler.available_channels)
         )
         modifier_channel_dropdown.pack(side=tk.LEFT, padx=(0, 8))
         modifier_channel_dropdown.set("Modifier channel...")
@@ -353,8 +359,9 @@ class SettingsManager:
                 if new_text == "":
                     current_values.extend(sorted(self.data_handler.available_channels))
                 else:
+                    lowered = new_text.lower()
                     for col in self.data_handler.available_channels:
-                        if new_text.lower() in col.lower():
+                        if lowered in col.lower():
                             current_values.append(col)
                 base_channel_dropdown['values'] = current_values
                 modifier_channel_dropdown['values'] = current_values
@@ -381,7 +388,7 @@ class SettingsManager:
             if custom_name == "Custom channel name...":
                 custom_name = ""
 
-            if base == "None" or modifier == "None" or base == "Base channel..." or modifier == "Modifier channel...":
+            if (base in ("None", "Base channel...")) or (modifier in ("None", "Modifier channel...")):
                 print("Error", "Please select both a base and a modifier channel.")
                 return
 
@@ -399,7 +406,8 @@ class SettingsManager:
                 elif operand == "*":
                     new_data = base_data * modifier_data
                 elif operand == "/":
-                    new_data = base_data / modifier_data
+                    with np.errstate(divide='ignore', invalid='ignore'):
+                        new_data = base_data / modifier_data
                 else:
                     print("Error", "Invalid operand.")
                     return
@@ -409,7 +417,6 @@ class SettingsManager:
 
             custom_names = [col for col in self.data_handler.df.columns if col.startswith("custom_")]
             n_custom = len(custom_names)
-
             if custom_name == "":
                 new_name = f"custom_{n_custom+1}"
             else:
@@ -434,6 +441,7 @@ class SettingsManager:
         create_button.pack(side=tk.LEFT, padx=(8, 0))
 
         return custom_channel_frame
+
     def get_highlight_configs(self):
         return self.highlight_configs
 
@@ -999,6 +1007,7 @@ def plot_assist_df(df: pd.DataFrame, title: str, autoDict: dict[str, str] = None
     else:
         app = Plotter(df, title)
         app.mainloop()
+
 if __name__ == "__main__":
     # exmaple autodict:
     # {"cosine": "grouped", "sine": "grouped", "linear": "not grouped"}
