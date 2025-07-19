@@ -1,6 +1,7 @@
 import time
 import pandas as pd
 import tkinter as tk
+import tkinter.simpledialog as simpledialog
 import tkinter.ttk as ttk
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -303,7 +304,7 @@ class SettingsManager:
         self.highlight_configs.append(highlight_config)
         return highlight_frame
 
-    def create_custom_channel_section(self, update_callback: callable, update_callback2: callable):
+    def create_custom_channel_section(self, update_callback, update_callback2):
         custom_channel_frame = tk.Frame(
             self.parent_frame, bd=1, relief="flat",
             highlightbackground="black", highlightcolor="black", highlightthickness=1
@@ -764,8 +765,8 @@ class Plotter(tk.Tk):
             root = tk.Tk()
             root.withdraw()
             try:
-                ymin = tk.simpledialog.askfloat("Y-axis Limit", "Enter new Y min:")
-                ymax = tk.simpledialog.askfloat("Y-axis Limit", "Enter new Y max:")
+                ymin = simpledialog.askfloat("Y-axis Limit", "Enter new Y min:")
+                ymax = simpledialog.askfloat("Y-axis Limit", "Enter new Y max:")
                 if ymin is not None and ymax is not None:
                     clicked_ax.set_ylim(ymin, ymax)
                     if self._fig is not None:
@@ -1018,7 +1019,7 @@ class Plotter(tk.Tk):
         for channel_name in self.data_handler.available_channels:
             self.listbox.insert(tk.END, f"{channel_name}")
 
-def plot_assist_df(df: pd.DataFrame, title: str, autoDict: dict[str, str] = None):
+def plot_assist_df(df: pd.DataFrame, title: str, autoDict: dict[str, str] | None = None):
     if autoDict:
         app = Plotter(df, title)
         group_to_channels = {}
