@@ -587,18 +587,25 @@ class Plotter(tk.Tk):
 
         for ax_idx, (group_num, channel_names) in enumerate(sorted_groups):
             ax = axes[ax_idx]
+            group_data = []
             for channel in channel_names:
                 if channel not in self.data_handler.available_channels:
                     continue
-                ax.plot(self.data_handler.get_index(), self.data_handler.get_channel_data(channel), label=channel, linewidth=2)
+                data = self.data_handler.get_channel_data(channel)
+                ax.plot(self.data_handler.get_index(), data, label=channel, linewidth=2)
+                group_data.append(data)
 
             ax.grid(True, which='both', linestyle='--', alpha=0.6)
-            if ax in self._custom_ylims:
-                try:
-                    ymin, ymax = self._custom_ylims[ax]
-                    ax.set_ylim(ymin, ymax)
-                except Exception:
-                    pass
+            if ax not in self._custom_ylims and group_data:
+                all_data = pd.concat(group_data)
+                q_low = all_data.quantile(0.05)
+                q_high = all_data.quantile(0.95)
+                space = 0.05 * (q_high - q_low)
+                if space == 0:
+                    space = 0.05 * abs(q_high) if q_high != 0 else 1.0
+                ymin = q_low - space
+                ymax = q_high + space
+                ax.set_ylim(ymin, ymax)
 
         if group_titles is not None and isinstance(group_titles, list) and ax_idx < len(group_titles):
             group_title = group_titles[ax_idx]
