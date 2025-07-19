@@ -16,6 +16,20 @@ COLORS = {
     "yellow": "#FFFF00",
 }
 
+def set_entry_placeholder(entry: tk.Entry, placeholder: str, color="gray", normal_color="black"):
+    def on_focus_in(event):
+        if entry.get() == placeholder:
+            entry.delete(0, tk.END)
+            entry.config(foreground=normal_color)
+    def on_focus_out(event):
+        if entry.get() == "":
+            entry.insert(0, placeholder)
+            entry.config(foreground=color)
+    entry.insert(0, placeholder)
+    entry.config(foreground=color)
+    entry.bind("<FocusIn>", on_focus_in)
+    entry.bind("<FocusOut>", on_focus_out)
+
 class DataHandler():
     def __init__(self, df: pd.DataFrame) -> None:
         # Data validation
@@ -23,6 +37,7 @@ class DataHandler():
         if not (isinstance(idx, pd.DatetimeIndex) or pd.api.types.is_integer_dtype(idx) or pd.api.types.is_float_dtype(idx)):
             raise ValueError("DataFrame index must be DatetimeIndex or numeric.")
         for col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
             if not pd.api.types.is_numeric_dtype(df[col]):
                 raise ValueError(f"Column '{col}' must be numeric for plotting/highlighting.")
         self.df = df
@@ -30,7 +45,7 @@ class DataHandler():
         self.selected_channels: list[dict[str, int]] = []
         self.current_group = 1
         self.index = df.index
-    
+
     def get_index(self):
         return self.index
 
@@ -56,23 +71,23 @@ class DataHandler():
         new_channels = sorted(new_channels, key=lambda x: list(x.keys())[0])
         self.selected_channels.extend(new_channels)
         return new_channels
-    
+
     def select_all_channels(self, listbox: tk.Listbox, keep_group = False) -> list[dict[str, int]]:
         if not isinstance(listbox, tk.Listbox):
             raise TypeError("Expected a tk.Listbox instance.")
         channels = list(listbox.get(0, tk.END))
         return self.select_channels(channels, keep_group)
-    
+
     def reorder_groups(self) -> list[dict[str, int]]:
         unique_groups = sorted(set(channel_dict[list(channel_dict.keys())[0]] for channel_dict in self.selected_channels))
         group_mapping = {old_group: new_group for new_group, old_group in enumerate(unique_groups, 1)}
-        
+
         for channel_dict in self.selected_channels:
             channel_name = list(channel_dict.keys())[0]
             channel_dict[channel_name] = group_mapping[channel_dict[channel_name]]
-        
+
         return self.selected_channels
-    
+
     def combine_channels(self, channels: list[str]) -> list[dict[str, int]]:
         base_group = None
         for channel_dict in self.selected_channels:
@@ -80,33 +95,33 @@ class DataHandler():
             if channel_name in channels:
                 base_group = channel_dict[channel_name]
                 break
-        
+
         if base_group is None:
             return self.selected_channels
-        
+
         for channel_dict in self.selected_channels:
             channel_name = list(channel_dict.keys())[0]
             if channel_name in channels:
                 channel_dict[channel_name] = base_group
-        
+
         return self.reorder_groups()
-    
+
     def split_channels(self, channels: list[str]) -> list[dict[str, int]]:
         for channel_dict in self.selected_channels:
             channel_name = list(channel_dict.keys())[0]
             if channel_name in channels:
                 channel_dict[channel_name] = self.get_next_group()
-        
+
         return self.reorder_groups()
-    
+
     def remove_channels(self, channels: list[str]) -> list[dict[str, int]]:
         self.selected_channels = [
             channel_dict for channel_dict in self.selected_channels
             if list(channel_dict.keys())[0] not in channels
         ]
-        
+
         return self.reorder_groups()
-    
+
     def remove_all_channels(self, listbox) -> list[dict[str, int]]:
         if not isinstance(listbox, tk.Listbox):
             raise TypeError("Expected a tk.Listbox instance.")
@@ -123,87 +138,87 @@ class DataHandler():
             if list(channel_dict.keys())[0] not in channels_to_remove
         ]
         return self.reorder_groups()
-    
+
     def move(self, channels: list[str], direction: str) -> list[dict[str, int]]:
         if direction not in ["up", "down"]:
             return self.selected_channels
-        
+
         groups_to_move = set()
         for channel_dict in self.selected_channels:
             channel_name = list(channel_dict.keys())[0]
             if channel_name in channels:
                 groups_to_move.add(channel_dict[channel_name])
-        
+
         if not groups_to_move:
             return self.selected_channels
-        
+
         all_groups = sorted(set(channel_dict[list(channel_dict.keys())[0]] for channel_dict in self.selected_channels))
-        
+
         if direction == "up":
             min_group = min(groups_to_move)
             current_group_idx = all_groups.index(min_group)
-            
+
             if current_group_idx == 0:
                 new_group = max(all_groups) + 1
                 for channel_dict in self.selected_channels:
                     channel_name = list(channel_dict.keys())[0]
                     if channel_dict[channel_name] in groups_to_move:
                         channel_dict[channel_name] = new_group
-                
+
                 for channel_dict in self.selected_channels:
                     channel_name = list(channel_dict.keys())[0]
                     if channel_dict[channel_name] not in groups_to_move:
                         channel_dict[channel_name] = max(1, channel_dict[channel_name] - 1)
             else:
                 target_group = all_groups[current_group_idx - 1]
-                
+
                 channels_to_target = []
                 channels_to_original = []
-                
+
                 for channel_dict in self.selected_channels:
                     channel_name = list(channel_dict.keys())[0]
                     if channel_dict[channel_name] in groups_to_move:
                         channels_to_target.append(channel_name)
                     elif channel_dict[channel_name] == target_group:
                         channels_to_original.append(channel_name)
-                
+
                 for channel_dict in self.selected_channels:
                     channel_name = list(channel_dict.keys())[0]
                     if channel_dict[channel_name] in groups_to_move:
                         channel_dict[channel_name] = target_group
-                
+
                 for channel_dict in self.selected_channels:
                     channel_name = list(channel_dict.keys())[0]
                     if channel_dict[channel_name] == target_group and channel_name not in channels_to_target:
                         channel_dict[channel_name] = min_group
-        
+
         else:
             max_group = max(groups_to_move)
             current_group_idx = all_groups.index(max_group)
-            
+
             if current_group_idx == len(all_groups) - 1:
                 for channel_dict in self.selected_channels:
                     channel_name = list(channel_dict.keys())[0]
                     if channel_dict[channel_name] in groups_to_move:
                         channel_dict[channel_name] = 1
-                
+
                 for channel_dict in self.selected_channels:
                     channel_name = list(channel_dict.keys())[0]
                     if channel_dict[channel_name] not in groups_to_move:
                         channel_dict[channel_name] = channel_dict[channel_name] + 1
             else:
                 target_group = all_groups[current_group_idx + 1]
-                
+
                 channels_to_target = []
                 channels_to_original = []
-                
+
                 for channel_dict in self.selected_channels:
                     channel_name = list(channel_dict.keys())[0]
                     if channel_dict[channel_name] in groups_to_move:
                         channels_to_target.append(channel_name)
                     elif channel_dict[channel_name] == target_group:
                         channels_to_original.append(channel_name)
-                
+
                 for channel_dict in self.selected_channels:
                     channel_name = list(channel_dict.keys())[0]
                     if channel_dict[channel_name] in groups_to_move:
@@ -215,10 +230,10 @@ class DataHandler():
                         channel_dict[channel_name] = max_group
 
         self.selected_channels.sort(key=lambda x: list(x.values())[0])
-        
+
         return self.reorder_groups()
 
-class HighlightCreator:
+class SettingsManager:
     def __init__(self, data_handler: DataHandler, parent_frame):
         self.data_handler = data_handler
         self.parent_frame = parent_frame
@@ -241,7 +256,7 @@ class HighlightCreator:
         highlight_channel_dropdown.pack(side=tk.LEFT, padx=(8, 0))
 
         highlight_filter_entry = tk.Entry(top_row)
-        highlight_filter_entry.insert(0, "Search channels...")
+        set_entry_placeholder(highlight_filter_entry, "Search channels...")
         highlight_filter_entry.pack(side=tk.LEFT, padx=(8, 0), fill=tk.X, expand=True)
 
         _last_highlight_filter_text = ""
@@ -251,7 +266,7 @@ class HighlightCreator:
 
             if new_text != _last_highlight_filter_text:
                 current_values = ["None"]
-                if new_text == "":
+                if new_text == "" or new_text == "Search channels...":
                     current_values.extend(sorted(self.data_handler.available_channels))
                 else:
                     for col in self.data_handler.available_channels:
@@ -278,13 +293,6 @@ class HighlightCreator:
         color_dropdown = ttk.Combobox(filter_row, textvariable=color_var, values=list(COLORS.keys()), state="readonly", width=8)
         color_dropdown.pack(side=tk.LEFT, padx=(6, 0))
 
-        def remove_highlight():
-            highlight_frame.destroy()
-            self.highlight_configs[:] = [cfg for cfg in self.highlight_configs if cfg['highlight_frame'] != highlight_frame]
-        remove_btn = tk.Button(filter_row, text="Remove", command=remove_highlight, width=7)
-        remove_btn.pack(side=tk.LEFT, padx=(8, 0))
-        
-        # Store the configuration for this highlight section
         highlight_config = {
             'highlight_channel_var': highlight_channel_var,
             'filter_mode_var': filter_mode_var,
@@ -294,7 +302,147 @@ class HighlightCreator:
         }
         self.highlight_configs.append(highlight_config)
         return highlight_frame
-        
+
+    def create_custom_channel_section(self, update_callback: callable, update_callback2: callable):
+        custom_channel_frame = tk.Frame(
+            self.parent_frame, bd=1, relief="flat",
+            highlightbackground="black", highlightcolor="black", highlightthickness=1
+        )
+        custom_channel_frame.pack(fill=tk.BOTH, expand=True)
+
+        top_row = tk.Frame(custom_channel_frame)
+        top_row.pack(anchor='nw', pady=(8, 4), padx=8, fill=tk.X)
+
+        custom_channel_label = tk.Label(top_row, text="Custom Channel", font=("Arial", 10, "bold"))
+        custom_channel_label.pack(side=tk.LEFT)
+
+        shared_filter_entry = tk.Entry(top_row)
+        set_entry_placeholder(shared_filter_entry, "Search channels...")
+        shared_filter_entry.pack(side=tk.RIGHT, padx=(8, 0), fill=tk.X, expand=True)
+
+        selector_row = tk.Frame(custom_channel_frame)
+        selector_row.pack(anchor='nw', pady=(4, 4), padx=8, fill=tk.X)
+
+        base_channel_var = tk.StringVar(value="None")
+        base_channel_dropdown = ttk.Combobox(
+            selector_row, textvariable=base_channel_var, state="readonly", width=18,
+            values=["None"] + sorted(self.data_handler.available_channels)
+        )
+        base_channel_dropdown.pack(side=tk.LEFT, padx=(0, 8))
+        base_channel_dropdown.set("Base channel...")
+
+        operand_var = tk.StringVar(value="+")
+        operand_dropdown = ttk.Combobox(
+            selector_row, textvariable=operand_var, state="readonly", width=4,
+            values=["+", "-", "*", "/"]
+        )
+        operand_dropdown.pack(side=tk.LEFT, padx=(0, 8))
+        operand_dropdown.set("Op")
+
+        modifier_channel_var = tk.StringVar(value="None")
+        modifier_channel_dropdown = ttk.Combobox(
+            selector_row, textvariable=modifier_channel_var, state="readonly", width=18,
+            values=["None"] + sorted(self.data_handler.available_channels)
+        )
+        modifier_channel_dropdown.pack(side=tk.LEFT, padx=(0, 8))
+        modifier_channel_dropdown.set("Modifier channel...")
+
+        _last_shared_filter_text = ""
+
+        def on_shared_filter_entry_change(event):
+            nonlocal _last_shared_filter_text
+            new_text = shared_filter_entry.get().strip()
+            if new_text == "Search channels...":
+                new_text = ""
+            if new_text != _last_shared_filter_text:
+                current_values = ["None"]
+                if new_text == "":
+                    current_values.extend(sorted(self.data_handler.available_channels))
+                else:
+                    lowered = new_text.lower()
+                    for col in self.data_handler.available_channels:
+                        if lowered in col.lower():
+                            current_values.append(col)
+                base_channel_dropdown['values'] = current_values
+                modifier_channel_dropdown['values'] = current_values
+                _last_shared_filter_text = new_text
+
+        shared_filter_entry.bind("<KeyRelease>", on_shared_filter_entry_change)
+
+        bottom_row = tk.Frame(custom_channel_frame)
+        bottom_row.pack(anchor='w', pady=(8, 4), padx=8, fill=tk.X)
+
+        name_label = tk.Label(bottom_row, text="Name:")
+        name_label.pack(side=tk.LEFT, padx=(0, 4))
+
+        name_var = tk.StringVar()
+        name_entry = tk.Entry(bottom_row, textvariable=name_var, width=24)
+        set_entry_placeholder(name_entry, "Custom channel name...")
+        name_entry.pack(side=tk.LEFT, padx=(0, 8))
+
+        def create_custom_channel():
+            base = base_channel_var.get()
+            modifier = modifier_channel_var.get()
+            operand = operand_var.get()
+            custom_name = name_var.get().strip()
+            if custom_name == "Custom channel name...":
+                custom_name = ""
+
+            if (base in ("None", "Base channel...")) or (modifier in ("None", "Modifier channel...")):
+                print("Error", "Please select both a base and a modifier channel.")
+                return
+
+            base_data = self.data_handler.get_channel_data(base)
+            modifier_data = self.data_handler.get_channel_data(modifier)
+            if base_data is None or modifier_data is None:
+                print("Error", "Invalid channel selection.")
+                return
+
+            try:
+                if operand == "+":
+                    new_data = base_data + modifier_data
+                elif operand == "-":
+                    new_data = base_data - modifier_data
+                elif operand == "*":
+                    new_data = base_data * modifier_data
+                elif operand == "/":
+                    with np.errstate(divide='ignore', invalid='ignore'):
+                        new_data = base_data / modifier_data
+                else:
+                    print("Error", "Invalid operand.")
+                    return
+            except Exception as e:
+                print("Error", f"Failed to create custom channel: {e}")
+                return
+
+            custom_names = [col for col in self.data_handler.df.columns if col.startswith("custom_")]
+            n_custom = len(custom_names)
+            if custom_name == "":
+                new_name = f"custom_{n_custom+1}"
+            else:
+                new_name = custom_name
+
+            if new_name in self.data_handler.df.columns:
+                print("Error", f"Channel '{new_name}' already exists.")
+                return
+
+            new_data = pd.Series(new_data, index=self.data_handler.df.index)
+            self.data_handler.df[new_name] = new_data
+            self.data_handler.available_channels = sorted(self.data_handler.df.columns)
+            self.data_handler.select_channels([new_name])
+            update_callback()
+            update_callback2()
+
+            base_channel_dropdown['values'] = ["None"] + sorted(self.data_handler.available_channels)
+            modifier_channel_dropdown['values'] = ["None"] + sorted(self.data_handler.available_channels)
+
+            print("Success", f"Custom channel '{new_name}' created and added.")
+
+        create_button = tk.Button(bottom_row, text="Create Custom Channel", command=create_custom_channel)
+        create_button.pack(side=tk.LEFT, padx=(8, 0))
+
+        return custom_channel_frame
+
     def get_highlight_configs(self):
         return self.highlight_configs
 
@@ -319,6 +467,7 @@ class Plotter(tk.Tk):
         filter_label_frame.pack(fill=tk.X, pady=(0, 2))
 
         self.filter_entry = tk.Entry(filter_label_frame)
+        set_entry_placeholder(self.filter_entry, "Search channels...")
         self.filter_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
 
         self._last_filter_text = ""
@@ -327,7 +476,6 @@ class Plotter(tk.Tk):
 
             if new_text != self._last_filter_text:
                 self.listbox.delete(0, tk.END)
-                print("Entry changed:", new_text)
 
                 for col in self.data_handler.available_channels:
                     if new_text.lower() in col.lower():
@@ -380,14 +528,11 @@ class Plotter(tk.Tk):
         settings_frame = tk.Frame(self, width=350)
         settings_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10, anchor='n')
         settings_frame.pack_propagate(False)
-        
-        # Create initial highlight area
-        self.hc = HighlightCreator(self.data_handler, settings_frame)
-        self.hc.create_highlight_section()
 
-        add_highlight_button = tk.Button(settings_frame, text="+", width=2, height=1, 
-                                       command=lambda: self.hc.create_highlight_section())
-        add_highlight_button.pack(side=tk.BOTTOM, anchor='sw', padx=5, pady=5)
+        self.hc = SettingsManager(self.data_handler, settings_frame)
+        self.hc.create_highlight_section()
+        self.hc.create_highlight_section()
+        self.hc.create_custom_channel_section(self.update_selected_listbox, self.update_available_listbox)
 
         plot_btn_frame = tk.Frame(right_frame)
         plot_btn_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=(3, 1))
@@ -415,7 +560,7 @@ class Plotter(tk.Tk):
         plot_btn = tk.Button(plot_btn_frame, text="Plot", command=self.plot, height=2)
         plot_btn.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2,0))
     
-    def plot(self):
+    def plot(self, group_titles=None):
         if not self.data_handler.selected_channels:
             return
 
@@ -446,23 +591,24 @@ class Plotter(tk.Tk):
                 ax.plot(self.data_handler.get_index(), self.data_handler.get_channel_data(channel), label=channel, linewidth=2)
 
             ax.grid(True, which='both', linestyle='--', alpha=0.6)
-            ax.set_ylabel(f"Group {group_num}")
-            if self.legend_outside:
-                ax.legend(
-                    loc='upper left',
-                    bbox_to_anchor=(1.01, 1.0),
-                    borderaxespad=0.0,
-                    fontsize=8,
-                    frameon=True
-                )
-            else:
-                ax.legend(loc='upper left', fontsize=8)
-            ax.spines['top'].set_visible(True)
-            ax.spines['bottom'].set_visible(True)
-            ax.spines['left'].set_visible(True)
-            ax.spines['right'].set_visible(True)
+        if group_titles is not None and isinstance(group_titles, list) and ax_idx < len(group_titles):
+            group_title = group_titles[ax_idx]
+            if not group_title:
+                group_title = f"Group {group_num}"
+        else:
+            group_title = f"Group {group_num}"
 
-            self.highlight(ax)
+        ax.set_ylabel(group_title)
+        if self.legend_outside:
+            ax.legend(
+                loc='upper left',
+                bbox_to_anchor=(1.01, 1.0),
+                borderaxespad=0.0,
+                fontsize=8,
+                frameon=True
+            )
+        else:
+            ax.legend(loc='upper left', fontsize=8)
 
         axes[-1].set_xlabel("Index")
         fig.suptitle(self.title_text)
@@ -612,6 +758,21 @@ class Plotter(tk.Tk):
 
         clicked_ax = next((ax for ax in self._axes if event.inaxes == ax), None)
         if event.xdata is None or event.ydata is None or clicked_ax is None:
+            return
+
+        if event.x < 100:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                ymin = tk.simpledialog.askfloat("Y-axis Limit", "Enter new Y min:")
+                ymax = tk.simpledialog.askfloat("Y-axis Limit", "Enter new Y max:")
+                if ymin is not None and ymax is not None:
+                    clicked_ax.set_ylim(ymin, ymax)
+                    if self._fig is not None:
+                        self._fig.canvas.draw_idle()
+            except Exception as e:
+                print("Invalid input:", e)
+            root.destroy()
             return
 
         lines = clicked_ax.get_lines()
@@ -852,11 +1013,28 @@ class Plotter(tk.Tk):
             group = channel_dict[channel_name]
             self.selected_listbox.insert(tk.END, f"{channel_name} [{group}]")
 
-def plot_assist_df(df, title):
-    app = Plotter(df, title)
-    app.mainloop()
+    def update_available_listbox(self):
+        self.listbox.delete(0, tk.END)
+        for channel_name in self.data_handler.available_channels:
+            self.listbox.insert(tk.END, f"{channel_name}")
+
+def plot_assist_df(df: pd.DataFrame, title: str, autoDict: dict[str, str] = None):
+    if autoDict:
+        app = Plotter(df, title)
+        group_to_channels = {}
+        for channel_name, group in autoDict.items():
+            group_to_channels.setdefault(group, []).append(channel_name)
+        for group, channels in group_to_channels.items():
+            app.data_handler.select_channels(channels, keep_group=True)
+        group_names = list(group_to_channels.keys())
+        app.plot(group_names)
+    else:
+        app = Plotter(df, title)
+        app.mainloop()
 
 if __name__ == "__main__":
+    # exmaple autodict:
+    # {"cosine": "grouped", "sine": "grouped", "linear": "not grouped"}
     df = pd.read_csv('example_dataframe_time.csv', index_col=0)
     df.index = pd.to_datetime(df.index)
     plot_assist_df(df, "Plot Assist")
