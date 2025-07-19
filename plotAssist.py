@@ -303,7 +303,8 @@ class Plotter(tk.Tk):
         super().__init__()
         #self.df = df
         self.data_handler = DataHandler(df)
-        self.titleText = title
+        self.title_text = title
+        self.legend_outside = False
         self._axes = []
         self._fig = None
 
@@ -391,8 +392,28 @@ class Plotter(tk.Tk):
         plot_btn_frame = tk.Frame(right_frame)
         plot_btn_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=(3, 1))
 
-        plot_btn = tk.Button(plot_btn_frame, text="Plot", command=self.plot)
-        plot_btn.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        legend_frame = tk.Frame(plot_btn_frame)
+        legend_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 2))
+
+        self.legend_outside_var = tk.BooleanVar(value=False)
+        self.legend_outside = False
+
+        def update_legend_outside(*args):
+            self.legend_outside = self.legend_outside_var.get()
+        self.legend_outside_var.trace_add('write', update_legend_outside)
+
+        legend_checkbox = tk.Checkbutton(
+            legend_frame, variable=self.legend_outside_var, width=3, padx=0, pady=0
+        )
+        legend_checkbox.pack(side=tk.BOTTOM, anchor='center', fill=tk.X, expand=True, pady=(0,0))
+
+        legend_label = tk.Label(
+            legend_frame, text="Legend\noutside", justify='center', font=("", 8)
+        )
+        legend_label.pack(side=tk.TOP, anchor='center', fill=tk.X, expand=True)
+
+        plot_btn = tk.Button(plot_btn_frame, text="Plot", command=self.plot, height=2)
+        plot_btn.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2,0))
     
     def plot(self):
         if not self.data_handler.selected_channels:
@@ -426,7 +447,16 @@ class Plotter(tk.Tk):
 
             ax.grid(True, which='both', linestyle='--', alpha=0.6)
             ax.set_ylabel(f"Group {group_num}")
-            ax.legend(loc='upper right', fontsize=8)
+            if self.legend_outside:
+                ax.legend(
+                    loc='upper left',
+                    bbox_to_anchor=(1.01, 1.0),
+                    borderaxespad=0.0,
+                    fontsize=8,
+                    frameon=True
+                )
+            else:
+                ax.legend(loc='upper left', fontsize=8)
             ax.spines['top'].set_visible(True)
             ax.spines['bottom'].set_visible(True)
             ax.spines['left'].set_visible(True)
@@ -435,7 +465,7 @@ class Plotter(tk.Tk):
             self.highlight(ax)
 
         axes[-1].set_xlabel("Index")
-        fig.suptitle(self.titleText)
+        fig.suptitle(self.title_text)
         fig.canvas.mpl_connect('button_press_event', self._on_click)
         plt.tight_layout()
         if self._fig is not None:
