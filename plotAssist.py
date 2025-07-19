@@ -453,9 +453,10 @@ class Plotter(tk.Tk):
         #self.df = df
         self.data_handler = DataHandler(df)
         self.title_text = title
-        self.legend_outside = False
         self._axes = []
         self._fig = None
+
+        self._custom_ylims = {}
 
         self.title(title)
         self.geometry("1050x400")
@@ -592,6 +593,13 @@ class Plotter(tk.Tk):
                 ax.plot(self.data_handler.get_index(), self.data_handler.get_channel_data(channel), label=channel, linewidth=2)
 
             ax.grid(True, which='both', linestyle='--', alpha=0.6)
+            if ax in self._custom_ylims:
+                try:
+                    ymin, ymax = self._custom_ylims[ax]
+                    ax.set_ylim(ymin, ymax)
+                except Exception:
+                    pass
+
         if group_titles is not None and isinstance(group_titles, list) and ax_idx < len(group_titles):
             group_title = group_titles[ax_idx]
             if not group_title:
@@ -614,6 +622,30 @@ class Plotter(tk.Tk):
         axes[-1].set_xlabel("Index")
         fig.suptitle(self.title_text)
         fig.canvas.mpl_connect('button_press_event', self._on_click)
+
+        if hasattr(fig.canvas, "toolbar") and fig.canvas.toolbar is not None:
+            toolbar = fig.canvas.toolbar
+            if not hasattr(toolbar, "_plotassist_home_patched"):
+                orig_home = toolbar.home
+
+                def custom_home(*args, **kwargs):
+                    if orig_home is not None:
+                        orig_home(*args, **kwargs)
+                    for ax in self._axes:
+                        if ax in self._custom_ylims:
+                            try:
+                                ymin, ymax = self._custom_ylims[ax]
+                                ax.set_ylim(ymin, ymax)
+                            except Exception:
+                                pass
+                    if self._fig is not None:
+                        self._fig.canvas.draw_idle()
+                try:
+                    toolbar.home = custom_home
+                    setattr(toolbar, "_plotassist_home_patched", True)
+                except Exception:
+                    pass
+
         plt.tight_layout()
         if self._fig is not None:
             self._fig.canvas.draw_idle()
@@ -769,6 +801,7 @@ class Plotter(tk.Tk):
                 ymax = simpledialog.askfloat("Y-axis Limit", "Enter new Y max:")
                 if ymin is not None and ymax is not None:
                     clicked_ax.set_ylim(ymin, ymax)
+                    self._custom_ylims[clicked_ax] = (ymin, ymax)
                     if self._fig is not None:
                         self._fig.canvas.draw_idle()
             except Exception as e:
