@@ -598,33 +598,33 @@ class Plotter(tk.Tk):
             ax.grid(True, which='both', linestyle='--', alpha=0.6)
             if ax not in self._custom_ylims and group_data:
                 all_data = pd.concat(group_data)
-                q_low = all_data.quantile(0.05)
-                q_high = all_data.quantile(0.95)
-                space = 0.05 * (q_high - q_low)
+                q_low = all_data.quantile(0.01)
+                q_high = all_data.quantile(0.99)
+                space = 0.1 * (q_high - q_low)
                 if space == 0:
-                    space = 0.05 * abs(q_high) if q_high != 0 else 1.0
+                    space = 0.1 * abs(q_high) if q_high != 0 else 1.0
                 ymin = q_low - space
                 ymax = q_high + space
                 ax.set_ylim(ymin, ymax)
 
-        if group_titles is not None and isinstance(group_titles, list) and ax_idx < len(group_titles):
-            group_title = group_titles[ax_idx]
-            if not group_title:
+            if group_titles is not None and isinstance(group_titles, list) and ax_idx < len(group_titles):
+                group_title = group_titles[ax_idx]
+                if not group_title:
+                    group_title = f"Group {group_num}"
+            else:
                 group_title = f"Group {group_num}"
-        else:
-            group_title = f"Group {group_num}"
 
-        ax.set_ylabel(group_title)
-        if self.legend_outside:
-            ax.legend(
-                loc='upper left',
-                bbox_to_anchor=(1.01, 1.0),
-                borderaxespad=0.0,
-                fontsize=8,
-                frameon=True
-            )
-        else:
-            ax.legend(loc='upper left', fontsize=8)
+            ax.set_ylabel(group_title)
+            if self.legend_outside:
+                ax.legend(
+                    loc='upper left',
+                    bbox_to_anchor=(1.01, 1.0),
+                    borderaxespad=0.0,
+                    fontsize=8,
+                    frameon=True
+                )
+            else:
+                ax.legend(loc='upper left', fontsize=8)
 
         axes[-1].set_xlabel("Index")
         fig.suptitle(self.title_text)
@@ -789,6 +789,7 @@ class Plotter(tk.Tk):
                                 ax.axvspan(start, self.data_handler.index[i-1], color=color, alpha=0.5)
                         if highlighting and start is not None:
                             ax.axvspan(start, self.data_handler.index[-1], color=color, alpha=0.5)
+
     def _on_click(self, event):
         start = int(time.time() * 1000)
         if getattr(getattr(event.canvas, "toolbar", None), "mode", None):
@@ -796,19 +797,48 @@ class Plotter(tk.Tk):
         if not getattr(self, '_axes', None):
             return
 
-        clicked_ax = next((ax for ax in self._axes if event.inaxes == ax), None)
-        if event.xdata is None or event.ydata is None or clicked_ax is None:
+        clicked_near_ax = None
+        for ax in self._axes:
+            #print(f"bottom left {ax.transAxes.transform((0, 0))}  top right  {ax.transAxes.transform((1, 1))}")
+            xmin, ymin = ax.transAxes.transform((0, 0))
+            xmax, ymax = ax.transAxes.transform((1, 1))
+            if ax == self._axes[0]:
+                right_of_top = xmax
+                left_of_top = xmin
+                top_of_top = ymax
+            #print(f"X goes from {xmin} to {xmax},  y goes from {ymin} to {ymax}")
+            if (event.x < xmin) & (event.y >= ymin) & (event.y <= ymax):
+                #print("clicked to the left of an ax")
+                clicked_near_ax = ax
+
+        #change title
+
+        if (event.y > top_of_top) & (event.x>=left_of_top) & (event.x <= right_of_top):
+            #change title
+            newtitle = simpledialog.askstring("Change Title", "Enter New Chart Title:")
+            if not (newtitle==""):
+                print('setting new title, I hope: '+newtitle)
+                self.title_text = newtitle
+                self._fig.suptitle(self.title_text)
+                self._fig.canvas.draw_idle()
             return
 
-        if event.x < 100:
+        clicked_ax = next((ax for ax in self._axes if event.inaxes == ax), None)
+        if ((event.xdata is None) or (event.ydata is None) or (clicked_ax is None)) & (clicked_near_ax is None):
+            print('all nones, but also not outside-left click')
+            return
+
+        #if event.x < 100:
+        # if you click outside the plot area then you get the axis min max dialog
+        if not (clicked_near_ax is None):
             root = tk.Tk()
             root.withdraw()
             try:
                 ymin = simpledialog.askfloat("Y-axis Limit", "Enter new Y min:")
                 ymax = simpledialog.askfloat("Y-axis Limit", "Enter new Y max:")
                 if ymin is not None and ymax is not None:
-                    clicked_ax.set_ylim(ymin, ymax)
-                    self._custom_ylims[clicked_ax] = (ymin, ymax)
+                    clicked_near_ax.set_ylim(ymin, ymax)
+                    self._custom_ylims[clicked_near_ax] = (ymin, ymax)
                     if self._fig is not None:
                         self._fig.canvas.draw_idle()
             except Exception as e:
