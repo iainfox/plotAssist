@@ -18,5 +18,5 @@ else:
 
     url = frontend.as_uri()
 
-webview.create_window("App", url, width=1050, height=400)
+webview.create_window("App", url, width=1081, height=439)
 webview.start(gui='edgechromium', debug=True)
