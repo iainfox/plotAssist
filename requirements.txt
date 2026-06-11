@@ -1,4 +1,4 @@
 pandas
 matplotlib
 numpy
-pywebview[qt, ssl]
+pywebview[ssl]
