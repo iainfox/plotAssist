@@ -8,7 +8,50 @@
 	</head>
 	<body>
 		<div id="app">
+			<div id="available-channels" class="section">
+				<div class="header">
+					<input type="text" id="available-channels-search" placeholder="Search Channels ..."></input>
+					<p>Available Channels</p>
+				</div>
 
+				<div id="available-channels-container">
+					<ul id="available-channels-list" class="list">
+
+					</ul>
+
+				</div>
+			</div>
+
+			<div id="available-channels-buttons">
+				<div>
+					<button>&gt&gt</button>
+					<button>[&gt&gt]</button>
+					<button>&gt</button>
+					<button>[&gt]</button>
+				</div>
+
+				<div>
+					<button>[&lt&gt]</button>
+					<button>[&gt&lt]</button>
+					<button>↑</button>
+					<button>↓</button>
+					<button>&lt</button>
+					<button>&lt&lt</button>
+				</div>
+			</div>
+
+			<div id="selected-channels" class="section">
+				<div class="header">
+					<p>Selected Channels</p>
+				</div>
+				<ul id="selected-channels-list" class="list">
+
+				</ul>
+			</div>
+
+			<div id="filters" class="section">
+
+			</div>
 		</div>
 		<script type="module" src="/src/main.ts"></script>
 	</body>
