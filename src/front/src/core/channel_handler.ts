@@ -1,8 +1,7 @@
 import type { AppData } from "../types";
-import { dom } from "./dom";
 
 export class channelHandler {
-	private available_channels_list = dom.availableChannelsList;
+	private list: HTMLUListElement;
 
 	private selectedItems = new Set<HTMLLIElement>();
 	private lastClickedIndex: number | null = null;
@@ -12,7 +11,9 @@ export class channelHandler {
 	private dragStartY = 0
 	private selectionBox: HTMLDivElement | null = null
 
-	constructor(data: AppData) {
+	constructor(list: HTMLUListElement, data: AppData) {
+		this.list = list
+
 		const channel_names = data.channels.map((channel) => channel.name)
 
 		channel_names.forEach((channel_name, index) => {
@@ -24,7 +25,7 @@ export class channelHandler {
 				this.handleClick(event, li, index)
 			})
 
-			this.available_channels_list.appendChild(li)
+			this.list.appendChild(li)
 		});
 
 		document.addEventListener("keydown", (event) => {
@@ -33,7 +34,7 @@ export class channelHandler {
 			}
 		});
 
-		this.available_channels_list.addEventListener("mousedown", this.onMouseDown)
+		this.list.addEventListener("mousedown", this.onMouseDown)
 		document.addEventListener("mousemove", this.onMouseMove)
 		document.addEventListener("mouseup", this.onMouseUp)
 	}
@@ -42,7 +43,7 @@ export class channelHandler {
 		if (this.isDragging) return
 
 		const items = Array.from(
-			this.available_channels_list.querySelectorAll("li")
+			this.list.querySelectorAll("li")
 		) as HTMLLIElement[];
 
 		if (event.shiftKey && this.lastClickedIndex !== null) {
@@ -115,7 +116,7 @@ export class channelHandler {
 
 	private updateSelection(x1: number, y1: number, x2: number, y2: number) {
 		const items = Array.from(
-			this.available_channels_list.querySelectorAll("li")
+			this.list.querySelectorAll("li")
 		) as HTMLLIElement[];
 
 		const next = new Set<HTMLLIElement>();

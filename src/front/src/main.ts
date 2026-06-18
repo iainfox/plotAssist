@@ -11,5 +11,5 @@ window.addEventListener('pywebviewready', async () => {
 	app.appendChild(clone);
 
 	const data = await window.pywebview.api.get_data()
-	const channels = new channelHandler(data)
+	const channels = new channelHandler(dom.availableChannelsList, data)
 })
