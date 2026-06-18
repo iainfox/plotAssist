@@ -64,4 +64,8 @@ export const dom = {
 	get selectedChannelsList() {
 		return requiredElement<HTMLUListElement>("selected-channels-list");
 	},
+
+	get availableChannelsSearch() {
+		return requiredElement<HTMLInputElement>("available-channels-search");
+	},
 };
