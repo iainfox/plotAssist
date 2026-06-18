@@ -119,6 +119,8 @@ p {
 	min-height: 0;
 	overflow: auto;
 	margin: 0;
+	list-style-type: none;
+	padding: 5px;
 }
 
 #available-channels-container {
