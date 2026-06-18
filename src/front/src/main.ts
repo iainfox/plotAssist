@@ -12,4 +12,10 @@ window.addEventListener('pywebviewready', async () => {
 
 	const data = await window.pywebview.api.get_data()
 	const channels = new channelHandler(dom.availableChannelsList, data)
+
+	dom.availableChannelsSearch.addEventListener("input", (e) => {
+		const text = (e.target as HTMLInputElement).value
+
+		channels.sort(text)
+	})
 })
