@@ -1,4 +1,4 @@
-import {available_channels_list} from './dom'
+import {available_channels_list} from './core/dom'
 import './style.css'
 import type {AppData} from './types'
 
