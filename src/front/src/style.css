@@ -58,7 +58,6 @@ body {
 
 body {
 	padding: 10px;
-	height: 100vh;
 }
 
 #app {
@@ -117,7 +116,7 @@ p {
 	background-color: var(--accent-bg);
 	flex: 1;
 	min-height: 0;
-	overflow: auto;
+	overflow-y: auto;
 	margin: 0;
 	list-style-type: none;
 	padding: 5px;
@@ -125,7 +124,8 @@ p {
 
 #available-channels-container {
 	display: flex;
-	height: 100%;
+	flex: 1;
+	min-height: 0;
 	gap: 5px;
 }
 
