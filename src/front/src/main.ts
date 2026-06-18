@@ -1,8 +1,15 @@
-import {available_channels_list} from './core/dom'
+import { channelHandler } from './core/channel_handler';
+import { dom } from './core/dom';
 import './style.css'
-import type {AppData} from './types'
 
 window.addEventListener('pywebviewready', async () => {
+	const app = dom.app;
+	const template = dom.appTemplate
+
+	console.log("")
+	const clone = template.content.cloneNode(true);
+	app.appendChild(clone);
+
 	const data = await window.pywebview.api.get_data()
 	const channels = new channelHandler(data)
 })

@@ -7,8 +7,8 @@
 		<title>Plot Assist</title>
 	</head>
 	<body>
-		<div id="app">
-			<div id="available-channels" class="section">
+		<template id="app-template">
+				<div id="available-channels" class="section">
 				<div class="header">
 					<input type="text" id="available-channels-search" placeholder="Search Channels ..."></input>
 					<p>Available Channels</p>
@@ -52,6 +52,10 @@
 			<div id="filters" class="section">
 
 			</div>
+		</template>
+
+		<div id="app">
+		
 		</div>
 		<script type="module" src="/src/main.ts"></script>
 	</body>
