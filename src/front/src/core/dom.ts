@@ -1,62 +1,67 @@
-export const available_channels_list = document.getElementById("available-channels-list") as HTMLUListElement
+function requiredElement<T extends HTMLElement>(id: string): T {
+	const element = document.getElementById(id);
 
-export const add_all_button = document.getElementById("add-all") as HTMLButtonElement
-export const add_all_grouped = document.getElementById("add-all-grouped") as HTMLButtonElement
-export const add_selected_button = document.getElementById("add-selected") as HTMLButtonElement
-export const add_selected_grouped_button = document.getElementById("add-selected-grouped") as HTMLButtonElement
-export const split_group_button = document.getElementById("split-group") as HTMLButtonElement
-export const join_group_button = document.getElementById("join-group") as HTMLButtonElement
-export const move_group_up_button = document.getElementById("move-group-up") as HTMLButtonElement
-export const move_group_down_button = document.getElementById("move-group-down") as HTMLButtonElement
-export const remove_selected_button = document.getElementById("remove-selected") as HTMLButtonElement
-export const remove_all_button = document.getElementById("remove-all") as HTMLButtonElement
+	if (!element) {
+		throw new Error(`Couldn't find element: #${id}`);
+	}
 
-export const selected_channels_list = document.getElementById("selected-channels-list") as HTMLUListElement
-
-if (!available_channels_list) {
-	throw new Error("Couldn't find element of id: #available-channels-list")
+	return element as T;
 }
 
-if (!add_all_button) {
-	throw new Error("Couldn't find element of idL #add-all")
-}
+export const dom = {
+	get app() {
+		return requiredElement<HTMLDivElement>("app");
+	},
 
-if (!add_all_grouped) {
-	throw new Error("Couldn't find element of id: #add-all-grouped")
-}
+	get appTemplate() {
+		return requiredElement<HTMLTemplateElement>("app-template");
+	},
 
-if (!add_selected_button) {
-	throw new Error("Couldn't find element of idL #add-selected")
-}
+	get availableChannelsList() {
+		return requiredElement<HTMLUListElement>("available-channels-list");
+	},
 
-if (!add_selected_grouped_button) {
-	throw new Error("Couldn't find element of id: #add-selected-grouped")
-}
+	get addAllButton() {
+		return requiredElement<HTMLButtonElement>("add-all");
+	},
 
-if (!split_group_button) {
-	throw new Error("Couldn't find element of id: #split-group")
-}
+	get addAllGroupedButton() {
+		return requiredElement<HTMLButtonElement>("add-all-grouped");
+	},
 
-if (!join_group_button) {
-	throw new Error("Couldn't find element of id: #join-group")
-}
+	get addSelectedButton() {
+		return requiredElement<HTMLButtonElement>("add-selected");
+	},
 
-if (!move_group_up_button) {
-	throw new Error("Couldn't find element of id: #move-group-up")
-}
+	get addSelectedGroupedButton() {
+		return requiredElement<HTMLButtonElement>("add-selected-grouped");
+	},
 
-if (!move_group_down_button) {
-	throw new Error("Couldn't find element of id: #move-group-down")
-}
+	get splitGroupButton() {
+		return requiredElement<HTMLButtonElement>("split-group");
+	},
 
-if (!remove_selected_button) {
-	throw new Error("Couldn't find element of id: #remove-selected")
-}
+	get joinGroupButton() {
+		return requiredElement<HTMLButtonElement>("join-group");
+	},
 
-if (!remove_all_button) {
-	throw new Error("Couldn't find element of id: #remove-all")
-}
+	get moveGroupUpButton() {
+		return requiredElement<HTMLButtonElement>("move-group-up");
+	},
 
-if (!selected_channels_list) {
-	throw new Error("Couldn't find element of id: #selected-channels-list")
-}
+	get moveGroupDownButton() {
+		return requiredElement<HTMLButtonElement>("move-group-down");
+	},
+
+	get removeSelectedButton() {
+		return requiredElement<HTMLButtonElement>("remove-selected");
+	},
+
+	get removeAllButton() {
+		return requiredElement<HTMLButtonElement>("remove-all");
+	},
+
+	get selectedChannelsList() {
+		return requiredElement<HTMLUListElement>("selected-channels-list");
+	},
+};
