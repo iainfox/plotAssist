@@ -164,4 +164,18 @@ export class channelHandler {
 		}
 		this.selectedItems.clear();
 	}
+
+	public sort(key: string) {
+		const items = Array.from(
+			this.list.querySelectorAll("li")
+		) as HTMLLIElement[];
+
+		items.forEach((item) => {
+			if (!item.textContent.includes(key)) {
+				item.style.display = "none"
+			} else {
+				item.style.display = "block"
+			}
+		})
+	}
 }
