@@ -9,6 +9,10 @@ export class channelHandler {
 	private isDragging = false
 	private dragStartX = 0
 	private dragStartY = 0
+	private dragStartScrollTop = 0
+	private currentMouseX = 0;
+	private currentMouseY = 0;
+
 	private selectionBox: HTMLDivElement | null = null
 
 	constructor(list: HTMLUListElement, data: AppData) {
@@ -34,13 +38,18 @@ export class channelHandler {
 			}
 		});
 
-		this.list.addEventListener("mousedown", this.onMouseDown)
-		document.addEventListener("mousemove", this.onMouseMove)
-		document.addEventListener("mouseup", this.onMouseUp)
+		this.list.addEventListener("mousedown", this.onMouseDown);
+		this.list.addEventListener("scroll", this.onScroll);
+		document.addEventListener("mousemove", this.onMouseMove);
+		document.addEventListener("mouseup", this.onMouseUp);
 	}
 
-	private handleClick(event: MouseEvent, li: HTMLLIElement, index: number) {
-		if (this.isDragging) return
+	private handleClick(
+		event: MouseEvent,
+		li: HTMLLIElement,
+		index: number
+	) {
+		if (this.isDragging) return;
 
 		const items = Array.from(
 			this.list.querySelectorAll("li")
@@ -76,33 +85,61 @@ export class channelHandler {
 	private onMouseDown = (e: MouseEvent) => {
 		if (e.button !== 0) return;
 
+
 		this.isDragging = true;
 		this.dragStartX = e.clientX;
 		this.dragStartY = e.clientY;
+		this.dragStartScrollTop = this.list.scrollTop;
 
 		this.selectionBox = document.createElement("div");
 		this.selectionBox.style.position = "fixed";
 		this.selectionBox.style.border = "1px dashed #4c9ffe";
 		this.selectionBox.style.background = "rgba(76,159,254,0.15)";
 		this.selectionBox.style.pointerEvents = "none";
+		this.selectionBox.style.zIndex = "9999";
 
 		document.body.appendChild(this.selectionBox);
 	};
 
-	private onMouseMove = (e: MouseEvent) => {
-		if (!this.isDragging || !this.selectionBox) return;
+	private updateSelectionBox(clientX: number, clientY: number) {
+		const scrollDelta =
+			this.list.scrollTop - this.dragStartScrollTop;
 
-		const x1 = Math.min(this.dragStartX, e.clientX);
-		const y1 = Math.min(this.dragStartY, e.clientY);
-		const x2 = Math.max(this.dragStartX, e.clientX);
-		const y2 = Math.max(this.dragStartY, e.clientY);
+		const adjustedStartY =
+			this.dragStartY - scrollDelta;
 
-		this.selectionBox.style.left = `${x1}px`;
-		this.selectionBox.style.top = `${y1}px`;
-		this.selectionBox.style.width = `${x2 - x1}px`;
-		this.selectionBox.style.height = `${y2 - y1}px`;
+		const x1 = Math.min(this.dragStartX, clientX);
+		const y1 = Math.min(adjustedStartY, clientY);
+		const x2 = Math.max(this.dragStartX, clientX);
+		const y2 = Math.max(adjustedStartY, clientY);
+
+		this.selectionBox!.style.left = `${x1}px`;
+		this.selectionBox!.style.top = `${y1}px`;
+		this.selectionBox!.style.width = `${x2 - x1}px`;
+		this.selectionBox!.style.height = `${y2 - y1}px`;
 
 		this.updateSelection(x1, y1, x2, y2);
+	}
+
+	private onScroll = () => {
+		if (!this.isDragging || !this.selectionBox) return;
+
+		this.updateSelectionBox(
+			this.currentMouseX,
+			this.currentMouseY
+		);
+	};
+
+	private onMouseMove = (e: MouseEvent) => {
+		this.currentMouseX = e.clientX;
+		this.currentMouseY = e.clientY;
+
+		if (!this.isDragging || !this.selectionBox) return;
+
+		this.updateSelectionBox(
+			e.clientX,
+			e.clientY
+		);
 	};
 
 	private onMouseUp = () => {
@@ -114,7 +151,12 @@ export class channelHandler {
 		}
 	};
 
-	private updateSelection(x1: number, y1: number, x2: number, y2: number) {
+	private updateSelection(
+		x1: number,
+		y1: number,
+		x2: number,
+		y2: number
+	) {
 		const items = Array.from(
 			this.list.querySelectorAll("li")
 		) as HTMLLIElement[];
@@ -122,6 +164,8 @@ export class channelHandler {
 		const next = new Set<HTMLLIElement>();
 
 		for (const li of items) {
+			if (li.style.display === "none") continue
+
 			const rect = li.getBoundingClientRect();
 
 			const intersects =
